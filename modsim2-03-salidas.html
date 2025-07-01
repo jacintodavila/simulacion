@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Salidas de un Solo Modelo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Neutrals (Background: #F8F7F4, Text: #4A4A4A, Primary: #4C5F7A, Accent: #D4A373) -->
+    <!-- Application Structure Plan: A single-page application with a fixed top navigation bar for direct access to the four core topics. The structure is vertical, with each topic presented in its own section. Within each section, a two-column layout separates the theoretical explanation (left) from an interactive Chart.js visualization (right). This design was chosen to directly link abstract concepts to practical, visual examples, enhancing learning and engagement. The user can either scroll sequentially or use the nav bar for non-linear exploration, making the content more digestible than a simple text document. -->
+    <!-- Visualization & Content Choices: 
+        1. Naturaleza Estocástica: Goal: Show result variability. Viz: Bar chart. Interaction: Button to add new random results. Justification: Directly demonstrates that identical simulations yield different outputs. Library: Chart.js.
+        2. Medidas de Comportamiento: Goal: Explain KPI estimation. Viz: HTML stat cards. Interaction: Button to run 'replicas' and update stats/confidence intervals. Justification: Illustrates the process of estimation and increasing confidence with more data. Library: HTML/JS.
+        3. Sistemas Terminantes: Goal: Analyze finite-horizon simulations. Viz: Line chart. Interaction: Buttons to switch between different scenarios (e.g., optimistic/pessimistic). Justification: Highlights how outcomes vary across a finite period depending on conditions. Library: Chart.js.
+        4. Estado Estable: Goal: Differentiate warm-up vs. steady state. Viz: Line chart. Interaction: Toggle to highlight the 'warm-up' period and show the steady-state average. Justification: Provides a clear visual distinction between the transient and stable phases of a simulation. Library: Chart.js.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #4A4A4A;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #D4A373;
+            border-bottom-color: #D4A373;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn {
+            background-color: #4C5F7A;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .btn:hover {
+            background-color: #3b4a5e;
+            transform: scale(1.05);
+        }
+        .btn-accent {
+            background-color: #D4A373;
+        }
+        .btn-accent:hover {
+            background-color: #c8935a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 24rem; /* h-96 */
+            max-height: 400px;
+            max-width: 48rem; /* max-w-3xl */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h2 {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            color: #4C5F7A;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #D4A373;
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700;
+            color: #4C5F7A;
+            margin-bottom: 1rem;
+        }
+        h4 {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 500;
+            color: #3b4a5e;
+            margin-bottom: 0.5rem;
+        }
+        p, li {
+            line-height: 1.75;
+            margin-bottom: 1rem;
+        }
+        .stat-card {
+            background-color: #eef2f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 700;
+            color: #4C5F7A;
+        }
+        .stat-label {
+            font-size: 0.875rem; /* text-sm */
+            color: #5a7294;
+        }
+        .stat-ci {
+            font-size: 0.75rem;
+            color: #798aaa;
+            height: 1rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header and Navigation -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-md">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-[#4C5F7A]">Unidad III</div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#tema1" class="nav-link px-2 py-1">Naturaleza Estocástica</a>
+                <a href="#tema2" class="nav-link px-2 py-1">Medidas de Comportamiento</a>
+                <a href="#tema3" class="nav-link px-2 py-1">Sistemas Terminantes</a>
+                <a href="#tema4" class="nav-link px-2 py-1">Estado Estable</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <!-- Introduction Section -->
+        <section id="intro" class="mb-24 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#4C5F7A] mb-4">Análisis de las Salidas de un Solo Modelo</h1>
+            <p class="max-w-3xl mx-auto text-lg">
+                En el ámbito de la simulación de sistemas, esta unidad se centra en el análisis riguroso de los datos generados por un modelo individual. Una vez que un modelo ha sido construido y verificado, el siguiente paso crucial es interpretar sus resultados para obtener información valiosa sobre el comportamiento del sistema real que se está modelando. Este análisis es fundamental para la toma de decisiones, la optimización de procesos y la validación del modelo.
+            </p>
+        </section>
+
+        <!-- Tema 1: Naturaleza Estocástica -->
+        <section id="tema1" class="mb-24 pt-16 -mt-16">
+            <h2>Tema 1: Naturaleza Estocástica de la Salida</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <article>
+                    <p>La <strong>naturaleza estocástica de la salida</strong> se refiere a la variabilidad inherente en los resultados debido a la inclusión de variables aleatorias en el modelo. Esto significa que si se ejecuta la misma simulación varias veces, los resultados exactos serán diferentes en cada ejecución. Por lo tanto, el análisis requiere herramientas estadísticas para comprender la distribución de los resultados en lugar de un único valor determinista.</p>
+                    <h4>Ejemplo: Sistema de Equipajes</h4>
+                    <p>Un modelo de gestión de equipajes en un aeropuerto incluye aleatoriedad en los tiempos de llegada de maletas, procesamiento en escáneres y fallas de cintas. Al ejecutar la simulación varias veces, el tiempo promedio que una maleta tarda en pasar por el sistema variará.</p>
+                    <p>Haga clic en el botón para simular una nueva ejecución y observar cómo varía el resultado.</p>
+                    <button id="runStochasticBtn" class="btn">Ejecutar Nueva Simulación</button>
+                </article>
+                <div class="card p-4">
+                    <h4 class="text-center">Tiempo Promedio de Maleta por Ejecución (min)</h4>
+                    <div class="chart-container">
+                        <canvas id="stochasticChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tema 2: Medidas de Comportamiento -->
+        <section id="tema2" class="mb-24 pt-16 -mt-16">
+            <h2>Tema 2: Medidas de Comportamiento y su Estimación</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <article>
+                    <p>Las <strong>medidas de comportamiento</strong> son métricas cuantitativas que se utilizan para evaluar el rendimiento de un sistema simulado (KPIs). La <strong>estimación</strong> de estas medidas implica el uso de técnicas estadísticas, a menudo a través de múltiples réplicas, para obtener valores precisos y confiables con sus correspondientes intervalos de confianza.</p>
+                    <h4>Ejemplo: KPIs del Sistema de Equipajes</h4>
+                    <p>Para el sistema de equipajes, nos interesan métricas como el tiempo promedio en sistema, la utilización de los escáneres y la longitud de las colas. Para estimarlas con fiabilidad, no basta una sola simulación.</p>
+                    <p>Haga clic en el botón para ejecutar un lote de 10 réplicas y ver cómo se actualizan las estimaciones y se reduce la incertidumbre (intervalos de confianza).</p>
+                    <button id="runReplicasBtn" class="btn">Ejecutar 10 Réplicas</button>
+                </article>
+                <div class="card p-6 grid grid-cols-2 gap-4">
+                    <div class="stat-card">
+                        <div id="kpi1Value" class="stat-value">--</div>
+                        <div class="stat-label">Tiempo Prom. en Sistema (min)</div>
+                        <div id="kpi1CI" class="stat-ci"></div>
+                    </div>
+                     <div class="stat-card">
+                        <div id="kpi2Value" class="stat-value">--%</div>
+                        <div class="stat-label">Utilización de Escáneres</div>
+                        <div id="kpi2CI" class="stat-ci"></div>
+                    </div>
+                     <div class="stat-card">
+                        <div id="kpi3Value" class="stat-value">--</div>
+                        <div class="stat-label">Longitud Prom. de Cola</div>
+                         <div id="kpi3CI" class="stat-ci"></div>
+                    </div>
+                     <div class="stat-card">
+                        <div id="kpi4Value" class="stat-value">--</div>
+                        <div class="stat-label">Nº de Réplicas Ejecutadas</div>
+                         <div class="stat-ci"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tema 3: Sistemas Terminantes -->
+        <section id="tema3" class="mb-24 pt-16 -mt-16">
+            <h2>Tema 3: Análisis de Salidas de Sistemas Terminantes</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <article>
+                    <p>Las <strong>simulaciones terminantes</strong> representan un proceso que opera durante un período de tiempo finito y bien definido (p. ej., un día laboral, un evento específico). Estos sistemas no alcanzan un "estado estable", y su análisis se centra en el rendimiento durante ese período específico, fuertemente influenciado por las condiciones iniciales.</p>
+                    <h4>Ejemplo: Logística de Ayuda Humanitaria</h4>
+                    <p>Se simula la entrega de ayuda durante las 72 horas posteriores a un desastre. El objetivo es analizar el rendimiento total en ese período finito. El resultado depende en gran medida de las condiciones iniciales y los eventos aleatorios que ocurran.</p>
+                    <p>Seleccione un escenario para ver cómo cambia la trayectoria de entregas a lo largo de las 72 horas.</p>
+                    <div class="flex space-x-2">
+                        <button class="btn-scenario btn btn-accent" data-scenario="optimista">Escenario Optimista</button>
+                        <button class="btn-scenario btn" data-scenario="normal">Escenario Normal</button>
+                        <button class="btn-scenario btn" data-scenario="pesimista">Escenario Pesimista</button>
+                    </div>
+                </article>
+                <div class="card p-4">
+                    <h4 class="text-center">Ayuda Entregada Acumulada en 72 horas</h4>
+                    <div class="chart-container">
+                        <canvas id="terminatingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tema 4: Estado Estable -->
+        <section id="tema4" class="pt-16 -mt-16">
+            <h2>Tema 4: Análisis de Salidas de Simulaciones en Estado Estable</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <article>
+                    <p>Las <strong>simulaciones en estado estable</strong> se utilizan para estudiar el comportamiento a largo plazo de un sistema que opera de forma continua (p. ej., una fábrica, un servidor web). El objetivo es obtener métricas de rendimiento que representen este comportamiento de equilibrio, eliminando la influencia del período inicial de "calentamiento" o "transitorio".</p>
+                    <h4>Ejemplo: Servidor Web 24/7</h4>
+                    <p>Se simula el tiempo de respuesta de un servidor. Al principio, los resultados son erráticos (período de calentamiento) mientras el sistema se llena de solicitudes. Después de un tiempo, se estabiliza. Solo los datos del período de estado estable son relevantes para el análisis a largo plazo.</p>
+                    <p>Use el interruptor para resaltar el período de calentamiento y ver cómo el promedio en estado estable difiere del promedio total.</p>
+                    <div class="flex items-center space-x-3 mt-4">
+                        <span class="font-medium">Mostrar Periodo de Calentamiento</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" id="warmupToggle" class="sr-only peer" checked>
+                          <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4C5F7A]"></div>
+                        </label>
+                    </div>
+                </article>
+                <div class="card p-4">
+                    <h4 class="text-center">Tiempo de Respuesta del Servidor (ms)</h4>
+                    <div class="chart-container">
+                        <canvas id="steadyStateChart"></canvas>
+                    </div>
+                     <p id="steadyStateAvg" class="text-center font-bold mt-2 text-[#4C5F7A]"></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const chartOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                enabled: true,
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                titleFont: { size: 14 },
+                bodyFont: { size: 12 },
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#e0e0e0'
+                },
+                ticks: {
+                    color: '#4A4A4A'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    color: '#4A4A4A'
+                }
+            }
+        }
+    };
+    
+    // Tema 1: Stochastic Nature
+    let stochasticChart;
+    const runStochasticBtn = document.getElementById('runStochasticBtn');
+    let runCount = 5;
+
+    function createStochasticChart() {
+        const ctx = document.getElementById('stochasticChart').getContext('2d');
+        const initialData = Array.from({length: runCount}, () => 24 + Math.random() * 4);
+        stochasticChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Array.from({length: runCount}, (_, i) => `Ejecución ${i + 1}`),
+                datasets: [{
+                    label: 'Tiempo Promedio (min)',
+                    data: initialData,
+                    backgroundColor: 'rgba(76, 95, 122, 0.6)',
+                    borderColor: 'rgba(76, 95, 122, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: chartOptions
+        });
+    }
+
+    runStochasticBtn.addEventListener('click', () => {
+        runCount++;
+        const newData = 24 + Math.random() * 4;
+        stochasticChart.data.labels.push(`Ejecución ${runCount}`);
+        stochasticChart.data.datasets[0].data.push(newData);
+        stochasticChart.update();
+    });
+
+    createStochasticChart();
+
+    // Tema 2: Performance Measures
+    const runReplicasBtn = document.getElementById('runReplicasBtn');
+    const kpi1Value = document.getElementById('kpi1Value');
+    const kpi2Value = document.getElementById('kpi2Value');
+    const kpi3Value = document.getElementById('kpi3Value');
+    const kpi4Value = document.getElementById('kpi4Value');
+    const kpi1CI = document.getElementById('kpi1CI');
+    const kpi2CI = document.getElementById('kpi2CI');
+    const kpi3CI = document.getElementById('kpi3CI');
+    let totalReplicas = 0;
+
+    function updateKPIs() {
+        totalReplicas += 10;
+        const timeAvg = 25.5 - 5 / Math.sqrt(totalReplicas);
+        const utilAvg = 82 + 8 / Math.sqrt(totalReplicas);
+        const queueAvg = 4.1 + 3 / Math.sqrt(totalReplicas);
+        
+        const timeCI = 2 / Math.sqrt(totalReplicas);
+        const utilCI = 3 / Math.sqrt(totalReplicas);
+        const queueCI = 1.5 / Math.sqrt(totalReplicas);
+        
+        kpi1Value.textContent = timeAvg.toFixed(2);
+        kpi2Value.textContent = `${utilAvg.toFixed(2)}%`;
+        kpi3Value.textContent = queueAvg.toFixed(2);
+        kpi4Value.textContent = totalReplicas;
+
+        kpi1CI.textContent = `±${timeCI.toFixed(2)}`;
+        kpi2CI.textContent = `±${utilCI.toFixed(2)}%`;
+        kpi3CI.textContent = `±${queueCI.toFixed(2)}`;
+    }
+    
+    runReplicasBtn.addEventListener('click', updateKPIs);
+    updateKPIs();
+
+
+    // Tema 3: Terminating Systems
+    let terminatingChart;
+    const scenarioButtons = document.querySelectorAll('.btn-scenario');
+    const terminatingData = {
+        optimista: [0, 100, 250, 450, 700, 1000, 1300],
+        normal:    [0, 80, 180, 320, 500, 750, 950],
+        pesimista: [0, 50, 110, 190, 280, 380, 450]
+    };
+
+    function createTerminatingChart(scenario) {
+        const ctx = document.getElementById('terminatingChart').getContext('2d');
+        if (terminatingChart) {
+            terminatingChart.destroy();
+        }
+        terminatingChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['0h', '12h', '24h', '36h', '48h', '60h', '72h'],
+                datasets: [{
+                    label: 'Ayuda Entregada',
+                    data: terminatingData[scenario],
+                    fill: true,
+                    backgroundColor: 'rgba(212, 163, 115, 0.2)',
+                    borderColor: 'rgba(212, 163, 115, 1)',
+                    tension: 0.2
+                }]
+            },
+            options: chartOptions
+        });
+    }
+
+    scenarioButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            scenarioButtons.forEach(btn => btn.classList.remove('btn-accent'));
+            e.target.classList.add('btn-accent');
+            createTerminatingChart(e.target.dataset.scenario);
+        });
+    });
+
+    createTerminatingChart('optimista');
+
+    // Tema 4: Steady State
+    let steadyStateChart;
+    const warmupToggle = document.getElementById('warmupToggle');
+    const warmupPeriod = 30;
+    const totalPoints = 100;
+    const warmupData = Array.from({length: warmupPeriod}, (_, i) => 150 - i * 2 + (Math.random() - 0.5) * 50);
+    const steadyData = Array.from({length: totalPoints - warmupPeriod}, () => 90 + (Math.random() - 0.5) * 20);
+    const fullData = [...warmupData, ...steadyData];
+    
+    function calculateAverages() {
+        const steadySum = steadyData.reduce((a, b) => a + b, 0);
+        const steadyAvg = steadySum / steadyData.length;
+        document.getElementById('steadyStateAvg').textContent = `Promedio en Estado Estable: ${steadyAvg.toFixed(1)}ms`;
+    }
+
+    function createSteadyStateChart() {
+        const ctx = document.getElementById('steadyStateChart').getContext('2d');
+        const showWarmup = warmupToggle.checked;
+
+        const backgroundColors = fullData.map((_, i) => {
+            if (i < warmupPeriod && showWarmup) {
+                return 'rgba(255, 99, 132, 0.5)'; // Warmup color
+            }
+            return 'rgba(76, 95, 122, 0.5)'; // Steady state color
+        });
+
+        const borderColors = fullData.map((_, i) => {
+            if (i < warmupPeriod && showWarmup) {
+                return 'rgba(255, 99, 132, 1)';
+            }
+            return 'rgba(76, 95, 122, 1)';
+        });
+
+        if (steadyStateChart) {
+            steadyStateChart.destroy();
+        }
+
+        steadyStateChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: totalPoints}, (_, i) => `t=${i+1}`),
+                datasets: [{
+                    label: 'Tiempo de Respuesta (ms)',
+                    data: fullData,
+                    borderColor: borderColors,
+                    backgroundColor: backgroundColors, // For point backgrounds
+                    pointBackgroundColor: backgroundColors,
+                    pointRadius: 2,
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                     y: { ...chartOptions.scales.y },
+                     x: { ...chartOptions.scales.x, ticks: { ...chartOptions.scales.x.ticks, display: false } }
+                }
+            }
+        });
+    }
+    
+    warmupToggle.addEventListener('change', createSteadyStateChart);
+    createSteadyStateChart();
+    calculateAverages();
+    
+    // Smooth scrolling for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+
+});
+</script>
+</body>
+</html>
+

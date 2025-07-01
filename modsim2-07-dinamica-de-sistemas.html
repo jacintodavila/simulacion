@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Interactivo de Dinámica de Sistemas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Academic Calm -->
+    <!-- Application Structure Plan: The application is designed as an educational journey in four stages, moving from theory to practice. 1) 'Introducción': A brief welcome. 2) 'Conceptos Fundamentales': An interactive glossary for core ideas (causal loops, stocks/flows), allowing users to learn the building blocks non-linearly. 3) 'Laboratorio de Simulación': The core of the app, an interactive model of a software development project. Users manipulate variables (hiring, pressure) and see real-time consequences on a chart, making abstract concepts tangible. 4) 'Principios en Acción': A summary of feedback loops with simple charts. This structure was chosen over a linear report to foster exploratory learning and deepen understanding through direct interaction with a simulated system, which is more effective for complex topics like Systems Dynamics. -->
+    <!-- Visualization & Content Choices: 
+        - Causal & Stock/Flow Diagrams: Goal: Organize/Inform. Method: HTML/CSS with Tailwind for clean, static diagrams. Interaction: On-click details provide context without cluttering the view. Justification: Avoids complex libraries for simple visual information, ensuring fast loading and clarity.
+        - Feedback Loop Examples: Goal: Compare/Change. Method: Chart.js line charts. Interaction: Buttons toggle between positive and negative loop examples, updating the chart and explanatory text. Justification: Chart.js is ideal for simple, dynamic visualizations of change over time.
+        - Interactive Simulation: Goal: Relate/Change/Explore. Method: A vanilla JS simulation engine updates a Chart.js multi-line chart in real-time. Interaction: Users control sliders for 'Presión' and 'Contratación'. Justification: This is the most powerful tool here. It synthesizes all concepts by allowing users to experiment and see the systemic consequences of their decisions, which is the essence of Systems Dynamics.
+        - Library/Method: Vanilla JS for logic, Chart.js for all charting. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #C06A58;
+            border-bottom-color: #C06A58;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAEAEA;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn {
+            background-color: #588B8B;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #4A7676;
+        }
+        .btn-secondary {
+            background-color: #D1D5DB;
+            color: #1F2937;
+        }
+        .btn-secondary:hover {
+            background-color: #9CA3AF;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .diagram-arrow {
+            position: relative;
+            display: inline-block;
+            margin: 0 0.5rem;
+        }
+        .diagram-arrow::after {
+            content: '→';
+            font-size: 1.5rem;
+            color: #588B8B;
+        }
+        .diagram-label {
+            position: absolute;
+            top: -1.2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            font-weight: bold;
+            color: #C06A58;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">Dinámica de Sistemas</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#introduccion" class="nav-link px-3 py-2 text-sm font-medium active">Introducción</a>
+                        <a href="#conceptos" class="nav-link px-3 py-2 text-sm font-medium">Conceptos</a>
+                        <a href="#laboratorio" class="nav-link px-3 py-2 text-sm font-medium">Laboratorio</a>
+                        <a href="#principios" class="nav-link px-3 py-2 text-sm font-medium">Principios</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="introduccion" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900">Una Herramienta para Comprender la Complejidad</h2>
+                <p class="mt-6 max-w-3xl mx-auto text-lg leading-8 text-gray-600">La Dinámica de Sistemas (DS) es una metodología para entender cómo los componentes de un sistema complejo interactúan y generan comportamientos a lo largo del tiempo. Esta aplicación interactiva le permitirá explorar sus conceptos fundamentales, no solo leyendo, sino experimentando con un modelo simulado.</p>
+            </div>
+        </section>
+
+        <section id="conceptos" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">Conceptos Fundamentales</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">La DS utiliza un lenguaje visual para mapear sistemas. Haga clic en cada concepto para ver un ejemplo clásico de la ingeniería de sistemas: la gestión de un proyecto de software.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="space-y-8">
+                        <div id="causal-card" class="card cursor-pointer">
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800">Diagramas Causales</h3>
+                            <p class="text-gray-600">Muestran las relaciones de causa y efecto. Una flecha indica influencia, y un signo (+ o -) muestra si la relación es directa o inversa.</p>
+                        </div>
+                        <div id="niveles-card" class="card cursor-pointer">
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800">Diagramas de Niveles-Tasas</h3>
+                            <p class="text-gray-600">Representan cómo las cantidades (Niveles) se acumulan o disminuyen debido a los flujos (Tasas) de entrada y salida.</p>
+                        </div>
+                    </div>
+                    <div id="diagram-display" class="card min-h-[250px] flex items-center justify-center">
+                        <p class="text-gray-400">Seleccione un concepto para ver su representación.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="laboratorio" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">Laboratorio de Simulación</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">Esta sección le permite experimentar directamente con un modelo de dinámica de sistemas. Ajuste los parámetros a continuación para ver cómo las decisiones de gestión afectan la productividad, los retrasos y la moral de un equipo de desarrollo de software a lo largo del tiempo. Observe cómo se forman los circuitos de retroalimentación y sus consecuencias.</p>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1 space-y-6 card">
+                        <h3 class="text-xl font-semibold text-gray-800">Panel de Control</h3>
+                        <div>
+                            <label for="presionSlider" class="block text-sm font-medium text-gray-700">Presión sobre el equipo (0-100%)</label>
+                            <input id="presionSlider" type="range" min="0" max="100" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="presionValue" class="text-sm text-gray-500">20%</span>
+                        </div>
+                        <div>
+                            <label for="contratacionSlider" class="block text-sm font-medium text-gray-700">Esfuerzo de Contratación (0-10)</label>
+                            <input id="contratacionSlider" type="range" min="0" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="contratacionValue" class="text-sm text-gray-500">5</span>
+                        </div>
+                        <div class="flex space-x-4">
+                            <button id="startSim" class="btn flex-1">Iniciar Simulación</button>
+                            <button id="resetSim" class="btn btn-secondary flex-1">Reiniciar</button>
+                        </div>
+                        <div id="sim-readouts" class="space-y-2 pt-4 border-t border-gray-200">
+                             <p class="text-sm text-gray-500">El sistema está listo.</p>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 card">
+                        <div class="chart-container">
+                            <canvas id="simChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="principios" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                 <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">Principios en Acción: Circuitos de Retroalimentación</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">Los sistemas se rigen por circuitos de retroalimentación que amplifican (positivos) o estabilizan (negativos) el cambio. Explore ambos tipos para entender sus comportamientos característicos.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="card">
+                        <h3 id="loop-title" class="text-xl font-semibold mb-2 text-gray-800">Circuito Positivo: Crecimiento Exponencial</h3>
+                        <p id="loop-desc" class="text-gray-600 mb-4">Un circuito positivo refuerza el cambio en la misma dirección. El éxito genera más éxito, llevando a un crecimiento exponencial. Sin embargo, puede ser peligroso si conduce a un crecimiento descontrolado contra un límite, como la demanda insostenible de infraestructura.</p>
+                        <div class="flex space-x-4">
+                            <button id="show-positive" class="btn flex-1">Positivo</button>
+                            <button id="show-negative" class="btn btn-secondary flex-1">Negativo</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                         <div class="chart-container h-64 md:h-80">
+                            <canvas id="loopChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="bg-white border-t border-gray-200">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-500">
+            <p>&copy; 2025 Explorador de Dinámica de Sistemas. Creado como herramienta educativa.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('main section');
+            const navLinks = document.querySelectorAll('nav a');
+
+            function updateActiveLink() {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+            
+            window.addEventListener('scroll', updateActiveLink);
+            updateActiveLink();
+
+            navLinks.forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            const diagramDisplay = document.getElementById('diagram-display');
+            const causalCard = document.getElementById('causal-card');
+            const nivelesCard = document.getElementById('niveles-card');
+
+            const causalHTML = `
+                <div class="text-center w-full">
+                    <h4 class="font-semibold text-lg mb-4 text-gray-700">Diagrama Causal: Presión y Calidad</h4>
+                    <div class="flex items-center justify-center flex-wrap">
+                        <span class="font-medium p-2 bg-teal-50 rounded-md">Presión por Entregas</span>
+                        <div class="diagram-arrow"><span class="diagram-label">+</span></div>
+                        <span class="font-medium p-2 bg-teal-50 rounded-md">Atajos en Desarrollo</span>
+                        <div class="diagram-arrow"><span class="diagram-label">+</span></div>
+                        <span class="font-medium p-2 bg-red-50 rounded-md">Deuda Técnica</span>
+                        <div class="diagram-arrow"><span class="diagram-label">-</span></div>
+                        <span class="font-medium p-2 bg-teal-50 rounded-md">Calidad del Software</span>
+                    </div>
+                    <p class="text-sm mt-4 text-gray-500">A mayor presión, se toman más atajos, lo que aumenta la deuda técnica y, a su vez, reduce la calidad del software a largo plazo.</p>
+                </div>
+            `;
+
+            const nivelesHTML = `
+                <div class="text-center w-full">
+                    <h4 class="font-semibold text-lg mb-4 text-gray-700">Diagrama de Niveles-Tasas: Equipo de Desarrollo</h4>
+                    <div class="flex items-center justify-center flex-wrap">
+                        <span class="font-medium p-2 bg-green-50 rounded-md">Tasa de Contratación</span>
+                        <div class="diagram-arrow"></div>
+                        <span class="font-bold p-3 border-2 border-gray-600 rounded-lg">Desarrolladores</span>
+                        <div class="diagram-arrow"></div>
+                        <span class="font-medium p-2 bg-red-50 rounded-md">Tasa de Renuncias</span>
+                    </div>
+                    <p class="text-sm mt-4 text-gray-500">El nivel 'Desarrolladores' aumenta con la 'Tasa de Contratación' y disminuye con la 'Tasa de Renuncias'.</p>
+                </div>
+            `;
+            
+            causalCard.addEventListener('click', () => { diagramDisplay.innerHTML = causalHTML; });
+            nivelesCard.addEventListener('click', () => { diagramDisplay.innerHTML = nivelesHTML; });
+
+            let loopChart;
+            const loopChartCtx = document.getElementById('loopChart').getContext('2d');
+            const positiveData = {
+                labels: Array.from({length: 10}, (_, i) => `Mes ${i + 1}`),
+                datasets: [{
+                    label: 'Crecimiento Exponencial',
+                    data: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
+                    borderColor: '#588B8B',
+                    backgroundColor: 'rgba(88, 139, 139, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            };
+            const negativeData = {
+                labels: Array.from({length: 10}, (_, i) => `Día ${i + 1}`),
+                datasets: [{
+                    label: 'Estabilización hacia Objetivo',
+                    data: [100, 75, 62, 56, 53, 51, 50, 50, 50, 50],
+                    borderColor: '#C06A58',
+                    backgroundColor: 'rgba(192, 106, 88, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            };
+
+            function createLoopChart(data) {
+                if (loopChart) loopChart.destroy();
+                loopChart = new Chart(loopChartCtx, {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+            
+            createLoopChart(positiveData);
+            
+            const showPositiveBtn = document.getElementById('show-positive');
+            const showNegativeBtn = document.getElementById('show-negative');
+            const loopTitle = document.getElementById('loop-title');
+            const loopDesc = document.getElementById('loop-desc');
+
+            showPositiveBtn.addEventListener('click', () => {
+                createLoopChart(positiveData);
+                loopTitle.textContent = 'Circuito Positivo: Crecimiento Exponencial';
+                loopDesc.textContent = 'Un circuito positivo refuerza el cambio en la misma dirección. El éxito genera más éxito, llevando a un crecimiento exponencial. Sin embargo, puede ser peligroso si conduce a un crecimiento descontrolado.';
+                showPositiveBtn.classList.remove('btn-secondary');
+                showPositiveBtn.classList.add('btn');
+                showNegativeBtn.classList.remove('btn');
+                showNegativeBtn.classList.add('btn-secondary');
+            });
+
+            showNegativeBtn.addEventListener('click', () => {
+                createLoopChart(negativeData);
+                loopTitle.textContent = 'Circuito Negativo: Búsqueda de Equilibrio';
+                loopDesc.textContent = 'Un circuito negativo busca un objetivo o equilibrio. Contrarresta las desviaciones para mantener la estabilidad, como un termostato que regula la temperatura de una habitación.';
+                showNegativeBtn.classList.remove('btn-secondary');
+                showNegativeBtn.classList.add('btn');
+                showPositiveBtn.classList.remove('btn');
+                showPositiveBtn.classList.add('btn-secondary');
+            });
+
+            let simChart;
+            const simChartCtx = document.getElementById('simChart').getContext('2d');
+            let simulationInterval;
+
+            const presionSlider = document.getElementById('presionSlider');
+            const contratacionSlider = document.getElementById('contratacionSlider');
+            const presionValue = document.getElementById('presionValue');
+            const contratacionValue = document.getElementById('contratacionValue');
+            const readoutsDiv = document.getElementById('sim-readouts');
+            
+            presionSlider.addEventListener('input', (e) => presionValue.textContent = `${e.target.value}%`);
+            contratacionSlider.addEventListener('input', (e) => contratacionValue.textContent = e.target.value);
+
+            function initSimChart() {
+                if (simChart) simChart.destroy();
+                simChart = new Chart(simChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            { label: 'Proyectos Acumulados', data: [], borderColor: '#4A4A4A', fill: false, tension: 0.1 },
+                            { label: 'Moral del Equipo', data: [], borderColor: '#588B8B', fill: false, tension: 0.1, yAxisID: 'y1' },
+                            { label: 'Calidad del Código', data: [], borderColor: '#C06A58', fill: false, tension: 0.1, yAxisID: 'y1' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { title: { display: true, text: 'Semanas' } },
+                            y: { type: 'linear', position: 'left', title: { display: true, text: 'Nº Proyectos' }, beginAtZero: true },
+                            y1: { type: 'linear', position: 'right', title: { display: true, text: 'Índice (0-100)' }, min: 0, max: 100, grid: { drawOnChartArea: false } }
+                        }
+                    }
+                });
+            }
+
+            function runSimulation() {
+                clearInterval(simulationInterval);
+                initSimChart();
+
+                let semana = 0;
+                let proyectos_pendientes = 10;
+                let desarrolladores = 20;
+                let moral = 80;
+                let calidad = 90;
+                
+                const presion = parseInt(presionSlider.value) / 100;
+                const esfuerzo_contratacion = parseInt(contratacionSlider.value);
+
+                simulationInterval = setInterval(() => {
+                    semana++;
+                    if (semana > 52) {
+                        clearInterval(simulationInterval);
+                        readoutsDiv.innerHTML = `<p class="text-sm font-semibold text-green-700">Simulación completada.</p>`;
+                        return;
+                    }
+
+                    const tasa_finalizacion_base = desarrolladores * 0.1;
+                    const efecto_calidad_en_tasa = Math.max(0.1, calidad / 100);
+                    const efecto_moral_en_tasa = Math.max(0.1, moral / 100);
+                    const tasa_finalizacion_real = tasa_finalizacion_base * efecto_calidad_en_tasa * efecto_moral_en_tasa;
+
+                    const nuevos_proyectos = 5;
+                    proyectos_pendientes += nuevos_proyectos - tasa_finalizacion_real;
+                    proyectos_pendientes = Math.max(0, proyectos_pendientes);
+
+                    const presion_por_proyectos = proyectos_pendientes / 50; 
+                    const presion_total = Math.min(1, presion + presion_por_proyectos);
+
+                    moral -= presion_total * 5; 
+                    moral += (1 - presion_total) * 1; 
+                    moral = Math.max(0, Math.min(100, moral));
+
+                    calidad -= presion_total * 2.5; 
+                    calidad += (1 - presion_total) * 0.5; 
+                    calidad = Math.max(0, Math.min(100, calidad));
+
+                    const tasa_contratacion = esfuerzo_contratacion * 0.1 * (moral / 100);
+                    const tasa_renuncias = (1 - moral / 100) * 0.5;
+                    desarrolladores += tasa_contratacion - tasa_renuncias;
+                    desarrolladores = Math.max(1, desarrolladores);
+
+                    simChart.data.labels.push(semana);
+                    simChart.data.datasets[0].data.push(proyectos_pendientes);
+                    simChart.data.datasets[1].data.push(moral);
+                    simChart.data.datasets[2].data.push(calidad);
+                    simChart.update('none');
+
+                    readoutsDiv.innerHTML = `
+                        <p class="text-sm text-gray-600"><strong>Semana:</strong> ${semana}</p>
+                        <p class="text-sm text-gray-600"><strong>Proyectos Pendientes:</strong> ${proyectos_pendientes.toFixed(1)}</p>
+                        <p class="text-sm text-gray-600"><strong>Moral Equipo:</strong> ${moral.toFixed(1)}%</p>
+                        <p class="text-sm text-gray-600"><strong>Calidad Código:</strong> ${calidad.toFixed(1)}%</p>
+                        <p class="text-sm text-gray-600"><strong>Desarrolladores:</strong> ${desarrolladores.toFixed(1)}</p>
+                    `;
+
+                }, 200);
+            }
+
+            document.getElementById('startSim').addEventListener('click', runSimulation);
+            document.getElementById('resetSim').addEventListener('click', () => {
+                clearInterval(simulationInterval);
+                initSimChart();
+                readoutsDiv.innerHTML = `<p class="text-sm text-gray-500">Sistema reiniciado. Listo para una nueva simulación.</p>`;
+            });
+
+            initSimChart();
+            diagramDisplay.innerHTML = `<p class="text-gray-400">Seleccione un concepto para ver su representación.</p>`;
+        });
+    </script>
+</body>
+</html>
+

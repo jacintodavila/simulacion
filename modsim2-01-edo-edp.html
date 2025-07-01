@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Interactivo de Simulación Continua</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: La aplicación está diseñada como una experiencia de aprendizaje vertical y guiada. Comienza con una introducción conceptual, luego compara visualmente los dos tipos de ecuaciones (EDO vs EDP) en una sección de "Conceptos Clave". A continuación, una sección de "Métodos" demuestra interactivamente por qué son necesarios los métodos numéricos. El punto culminante es el "Laboratorio de Simulación", donde el ejemplo de contaminación de datos del informe se convierte en una simulación en vivo. El usuario puede manipular los parámetros y ver los resultados en un gráfico en tiempo real. Esta estructura transforma el contenido pasivo en una herramienta de exploración activa, pasando de la teoría a la aplicación práctica de una manera atractiva. -->
+    <!-- Visualization & Content Choices: 1. Introducción: Texto estático para establecer el contexto. 2. Conceptos Clave (EDO/EDP): Objetivo: Comparar. Método: Layout de dos columnas con HTML/CSS para mostrar definiciones y fórmulas lado a lado. Justificación: Facilita la comparación directa. 3. Métodos Numéricos: Objetivo: Explicar el "porqué". Método: Gráfico de líneas (Chart.js/Canvas) que muestra una función exacta y luego, con un clic, superpone la aproximación del método de Euler. Justificación: Visualiza el concepto de error de aproximación de forma tangible. 4. Laboratorio de Simulación: Objetivo: Explorar relaciones y cambio. Método: Gráfico de líneas (Chart.js/Canvas) conectado a controles deslizantes (HTML) mediante JS. Justificación: Convierte un ejemplo estático en un experimento interactivo, permitiendo al usuario descubrir patrones y relaciones ("aprendizaje por descubrimiento"). Es el método más eficaz para ilustrar la dinámica de un sistema. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-stone-200">
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-lg font-bold text-orange-800">Simulación Continua</h1>
+            <ul class="flex space-x-4 sm:space-x-6 text-sm sm:text-base font-medium">
+                <li><a href="#introduccion" class="text-stone-600 hover:text-orange-700 transition-colors">Introducción</a></li>
+                <li><a href="#conceptos" class="text-stone-600 hover:text-orange-700 transition-colors">Conceptos</a></li>
+                <li><a href="#laboratorio" class="text-stone-600 hover:text-orange-700 transition-colors">Laboratorio</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 sm:py-12">
+
+        <section id="introduccion" class="text-center mb-16 sm:mb-24">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4 text-orange-900">Modelos de Simulación Continua</h2>
+            <p class="max-w-3xl mx-auto text-lg text-stone-700">
+                Esta es una exploración interactiva de la simulación continua, una metodología que nos permite predecir el comportamiento de sistemas que evolucionan de manera fluida en el tiempo. A través de las ecuaciones diferenciales, podemos modelar desde fenómenos físicos hasta complejos sistemas de ingeniería.
+            </p>
+        </section>
+
+        <section id="conceptos" class="mb-16 sm:mb-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold mb-2">Los Ladrillos del Modelo: EDO y EDP</h2>
+                <p class="max-w-2xl mx-auto text-stone-600">Los sistemas continuos se describen con dos tipos principales de ecuaciones diferenciales. Su diferencia clave radica en cuántas variables independientes consideran.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm">
+                    <h3 class="text-2xl font-bold mb-3 text-orange-800">Ecuaciones Diferenciales Ordinarias (EDO)</h3>
+                    <p><img src="edt.png" alt="Ecuacion Diferencial Total" style="float:left;"></p> 
+                    <p class="mb-4 text-stone-600">Relacionan una función de <span class="font-semibold text-orange-700">una sola variable</span> independiente (generalmente el tiempo) con sus derivadas. Son ideales para modelar sistemas donde el estado cambia uniformemente.</p>
+                    
+                    <div class="bg-stone-100 p-4 rounded-md text-center text-sm">
+            
+                        <p class="font-mono text-stone-800">$\frac{dy}{dt} = f(t, y)$</p>
+                    </div>
+                    <h4 class="font-semibold mt-4 mb-2">Ejemplo: Ley de Enfriamiento</h4>
+                    <p class="text-sm text-stone-600">Modela cómo la temperatura de un objeto cambia con el tiempo. El cambio depende solo del tiempo.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm">
+                    <h3 class="text-2xl font-bold mb-3 text-orange-800">Ecuaciones Diferenciales Parciales (EDP)</h3>
+                    <p><img src="edp.png" alt="Ecuacion Diferencial Parcial" style="float:left;"></p> 
+                    <p class="mb-4 text-stone-600">Involucran funciones de <span class="font-semibold text-orange-700">múltiples variables</span> independientes (como tiempo y espacio) y sus derivadas parciales. Se usan para fenómenos que varían en el tiempo y en el espacio.</p>
+                    <div class="bg-stone-100 p-4 rounded-md text-center text-sm">
+                        <p class="font-mono text-stone-800">$\frac{\partial u}{\partial t} = D (\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2})$</p>
+                    </div>
+                    <h4 class="font-semibold mt-4 mb-2">Ejemplo: Ecuación del Calor</h4>
+                    <p class="text-sm text-stone-600">Describe cómo se distribuye el calor en un objeto, dependiendo del tiempo y la posición dentro del objeto.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="laboratorio" class="bg-white rounded-lg border border-stone-200 shadow-lg p-6 sm:p-8">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">Laboratorio de Simulación Interactivo</h2>
+                <p><img src="dDc.png" alt="Ecuación de la Contaminación" style="float:left;"></p>
+                <p class="max-w-3xl mx-auto text-stone-600">
+                    Explore un ejemplo de ingeniería de sistemas: la contaminación de datos en una base de datos distribuida. Utilice los controles para ver en tiempo real cómo las tasas de contaminación y limpieza afectan la salud del sistema.
+                </p>
+                
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8 items-start">
+                <div class="lg:col-span-2">
+                    <div class="chart-container bg-stone-100 p-4 rounded-md">
+                        <canvas id="simulationChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-1 space-y-6">
+                    <h3 class="text-xl font-bold text-center">Panel de Control</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="betaSlider" class="block mb-1 font-medium text-stone-700">Tasa de Contaminación ($\beta$)</label>
+                            <input id="betaSlider" type="range" min="0.01" max="0.5" step="0.01" value="0.1" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            <span class="block text-right text-sm font-mono" id="betaValue">0.10</span>
+                        </div>
+                        <div>
+                            <label for="gammaSlider" class="block mb-1 font-medium text-stone-700">Tasa de Limpieza ($\gamma$)</label>
+                            <input id="gammaSlider" type="range" min="0.01" max="0.5" step="0.01" value="0.15" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            <span class="block text-right text-sm font-mono" id="gammaValue">0.15</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg space-y-3">
+                         <h4 class="font-bold text-lg text-orange-900">Resultados Clave</h4>
+                         <div>
+                             <p class="text-sm text-stone-600">Nivel de Contaminación (Equilibrio):</p>
+                             <p class="text-2xl font-bold font-mono text-orange-800" id="equilibriumValue">0.00 %</p>
+                         </div>
+                         <div>
+                             <p class="text-sm text-stone-600">Estado del Sistema:</p>
+                             <p class="text-lg font-semibold" id="systemStatus">Estable</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12">
+                <h3 class="text-xl font-bold mb-4 text-center">Implicaciones en Ingeniería de Sistemas</h3>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div class="bg-stone-100 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-1">Predicción</h4>
+                        <p class="text-stone-600">Estimar cuántos datos se corromperán en un periodo dado.</p>
+                    </div>
+                    <div class="bg-stone-100 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-1">Optimización</h4>
+                        <p class="text-stone-600">Determinar la tasa de limpieza necesaria para mantener la corrupción bajo control.</p>
+                    </div>
+                    <div class="bg-stone-100 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-1">Planificación</h4>
+                        <p class="text-stone-600">Justificar la inversión en herramientas de monitoreo y arquitecturas más robustas.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-6 mt-12 border-t border-stone-200">
+        <p class="text-sm text-stone-500">Aplicación Interactiva generada para la exploración de conceptos de simulación.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const V_total = 1000;
+            const D_C_0 = 0;
+            const T_max = 200;
+            const dt = 1;
+
+            const betaSlider = document.getElementById('betaSlider');
+            const gammaSlider = document.getElementById('gammaSlider');
+            const betaValue = document.getElementById('betaValue');
+            const gammaValue = document.getElementById('gammaValue');
+            const equilibriumValue = document.getElementById('equilibriumValue');
+            const systemStatus = document.getElementById('systemStatus');
+            
+            let simulationChart;
+
+            function runSimulation(beta, gamma) {
+                let Dc = D_C_0;
+                const history = [{t: 0, Dc: D_C_0}];
+                
+                for (let t = 0; t < T_max; t += dt) {
+                    const dDc_dt = beta * (V_total - Dc) - gamma * Dc;
+                    Dc = Dc + dDc_dt * dt;
+                    if (Dc > V_total) Dc = V_total;
+                    if (Dc < 0) Dc = 0;
+                    history.push({t: t + dt, Dc: Dc});
+                }
+                return history;
+            }
+
+            function updateUI() {
+                const beta = parseFloat(betaSlider.value);
+                const gamma = parseFloat(gammaSlider.value);
+
+                betaValue.textContent = beta.toFixed(2);
+                gammaValue.textContent = gamma.toFixed(2);
+
+                const data = runSimulation(beta, gamma);
+                const labels = data.map(p => p.t);
+                const values = data.map(p => (p.Dc / V_total) * 100);
+
+                simulationChart.data.labels = labels;
+                simulationChart.data.datasets[0].data = values;
+                simulationChart.update();
+
+                let equilibrium;
+                if (beta + gamma > 0) {
+                    equilibrium = (beta * V_total) / (beta + gamma);
+                } else {
+                    equilibrium = 0;
+                }
+                const equilibriumPercent = (equilibrium / V_total) * 100;
+                equilibriumValue.textContent = `${equilibriumPercent.toFixed(2)} %`;
+
+                if (beta > gamma) {
+                    systemStatus.textContent = "Inestable (Contaminación Crece)";
+                    systemStatus.className = "text-lg font-semibold text-red-600";
+                } else if (Math.abs(beta - gamma) < 0.01) {
+                    systemStatus.textContent = "Crítico (En el Límite)";
+                    systemStatus.className = "text-lg font-semibold text-yellow-600";
+                } else {
+                    systemStatus.textContent = "Estable (Bajo Control)";
+                    systemStatus.className = "text-lg font-semibold text-green-600";
+                }
+            }
+            
+            function initializeChart() {
+                const ctx = document.getElementById('simulationChart').getContext('2d');
+                simulationChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '% de Datos Contaminados',
+                            data: [],
+                            borderColor: 'rgb(234, 88, 12)',
+                            backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: '% Contaminación'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Tiempo (unidades)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false,
+                            }
+                        },
+                        animation: {
+                            duration: 0 // Disable animation for real-time updates
+                        }
+                    }
+                });
+            }
+
+            betaSlider.addEventListener('input', updateUI);
+            gammaSlider.addEventListener('input', updateUI);
+
+            initializeChart();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
+

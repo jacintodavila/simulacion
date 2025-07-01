@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introducción a la Construcción de Modelos con Dinámica de Sistemas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Stone, Slate, Amber) -->
+    <!-- Application Structure Plan: La aplicación está diseñada como un panel de control educativo con una navegación principal por pestañas para los cuatro conceptos técnicos clave (Multiplicadores, DT, Bloques, Integración), seguida de una sección de galería para los ejemplos. Esta estructura se eligió para transformar un documento de texto lineal y pasivo en una experiencia de aprendizaje activa y no lineal. Permite a los usuarios saltar directamente a un concepto de interés, interactuar con una simulación visual del mismo y asimilar la información en fragmentos manejables. Este enfoque modular es superior a un simple scroll, ya que fomenta la exploración y la comparación directa, mejorando la comprensión y la retención del material, que es el objetivo principal. -->
+    <!-- Visualization & Content Choices: 
+        - Tema 1 (Multiplicadores): Objetivo: Comparar. Viz: Gráfico de líneas interactivo (Chart.js) con un deslizador. Justificación: Demuestra visualmente el impacto no lineal de un multiplicador en una tasa, un concepto difícil de captar solo con texto. El deslizador da al usuario el control, haciendo la relación causa-efecto tangible.
+        - Tema 2 (Intervalo de Tiempo DT): Objetivo: Comparar. Viz: Gráfico de líneas (Chart.js) con botones de selección. Justificación: Muestra de forma dramática cómo un DT inadecuado puede distorsionar la realidad de los datos, comparando una señal real con los muestreos. Es la forma más clara de ilustrar el concepto de error de muestreo.
+        - Tema 3 (Modelos en Bloques): Objetivo: Organizar/Relacionar. Viz: Diagrama de bloques interactivo (HTML/CSS/Tailwind). Justificación: Representa la modularidad y las interconexiones de un sistema complejo. Al no poder usar SVG, un diagrama HTML estructurado con interactividad al pasar el ratón es la mejor alternativa, haciendo que la estructura del sistema sea explorable.
+        - Tema 4 (Método de Integración): Objetivo: Comparar. Viz: Gráfico de líneas (Chart.js) con botones. Justificación: Visualiza la diferencia de precisión entre métodos numéricos (Euler vs. RK4) comparándolos con una solución "real". Esto hace que el concepto abstracto de error de integración sea concreto y fácil de entender.
+        - Tema 5 (Ejemplos): Objetivo: Informar. Viz: Galería de tarjetas (HTML/CSS/Tailwind). Justificación: Presenta una lista de aplicaciones de forma visualmente atractiva y escaneable, más atractiva que una lista de viñetas.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f5f5f4; }
+        .tab-active { background-color: #f59e0b; color: #ffffff; }
+        .tab-inactive { background-color: #e7e5e4; color: #57534e; }
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 320px; max-height: 40vh; }
+        @media (min-width: 768px) { .chart-container { height: 400px; max-height: 50vh; } }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .block-diagram-grid { display: grid; grid-template-columns: 1fr 0.5fr 1fr; grid-template-rows: 1fr 1fr; gap: 1rem; align-items: center; justify-items: center; }
+        .block { transition: all 0.3s ease; }
+        .connector { background-color: #78716c; position: relative; }
+        .connector-h { width: 100%; height: 4px; }
+        .connector-v { width: 4px; height: 100%; }
+        .connector::after { content: '▶'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: #78716c; font-size: 16px; }
+        .connector-v::after { content: '▼'; right: 50%; top: auto; bottom: -8px; transform: translateX(50%); }
+    </style>
+</head>
+<body class="text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-bold text-stone-900">Construcción de Modelos con Dinámica de Sistemas</h1>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">Una exploración interactiva de los conceptos fundamentales para modelar sistemas complejos en ingeniería y más allá.</p>
+        </header>
+
+        <main class="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+            
+            <nav class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8" id="main-nav">
+                <button data-tab="multiplicadores" class="nav-tab text-sm md:text-base font-medium py-2 px-4 rounded-full shadow-sm transition-colors duration-300">Multiplicadores</button>
+                <button data-tab="intervalo" class="nav-tab text-sm md:text-base font-medium py-2 px-4 rounded-full shadow-sm transition-colors duration-300">Intervalo de Tiempo</button>
+                <button data-tab="bloques" class="nav-tab text-sm md:text-base font-medium py-2 px-4 rounded-full shadow-sm transition-colors duration-300">Modelos en Bloques</button>
+                <button data-tab="integracion" class="nav-tab text-sm md:text-base font-medium py-2 px-4 rounded-full shadow-sm transition-colors duration-300">Métodos de Integración</button>
+            </nav>
+
+            <div id="content-container">
+                
+                <!-- Tema 1: Multiplicadores -->
+                <section id="content-multiplicadores" class="content-section">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <article>
+                            <h2 class="text-2xl font-bold text-amber-600 mb-4">Tema 1: Multiplicadores y Funciones No Lineales</h2>
+                            <div class="space-y-4 text-stone-700">
+                                <p>Esta sección explora el uso de multiplicadores para modelar relaciones no lineales. A diferencia de una relación directa, un multiplicador permite que una tercera variable (como la "resistencia al cambio") influya en la efectividad de una acción (como la "inversión en capacitación").</p>
+                                <p>Interactúe con el gráfico para ver cómo esto funciona. La simulación muestra la adopción de una nueva tecnología. Observe la diferencia entre un modelo lineal simple y uno más realista que utiliza un multiplicador para representar la saturación. Mueva el deslizador para cambiar el nivel de resistencia y vea cómo afecta la velocidad y la forma de la curva de adopción.</p>
+                            </div>
+                        </article>
+                        <div>
+                            <div class="chart-container">
+                                <canvas id="multiplierChart"></canvas>
+                            </div>
+                            <div class="mt-4 px-2">
+                                <label for="resistanceSlider" class="block text-center font-medium text-stone-700">Resistencia al Cambio: <span id="resistanceValue" class="font-bold text-amber-700"></span></label>
+                                <input id="resistanceSlider" type="range" min="0.1" max="2" step="0.1" value="1" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tema 2: Intervalo de Tiempo -->
+                <section id="content-intervalo" class="content-section">
+                     <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <article>
+                            <h2 class="text-2xl font-bold text-amber-600 mb-4">Tema 2: La Importancia del Intervalo de Tiempo (DT)</h2>
+                            <div class="space-y-4 text-stone-700">
+                                <p>El intervalo de tiempo (DT) es crucial para la precisión de una simulación. Un DT demasiado grande puede hacer que el modelo "se salte" dinámicas importantes, llevando a conclusiones erróneas. Esta sección le permite visualizar este problema.</p>
+                                <p>El gráfico muestra la carga "real" en un servidor, que fluctúa rápidamente. Utilice los botones para cambiar el intervalo de tiempo de la simulación. Observe cómo un "DT Pequeño" captura con precisión los picos de carga, mientras que un "DT Grande" los ignora por completo, subestimando drásticamente el comportamiento del sistema y prediciendo incorrectamente que no hay picos peligrosos.</p>
+                            </div>
+                        </article>
+                        <div>
+                             <div class="chart-container">
+                                <canvas id="dtChart"></canvas>
+                            </div>
+                            <div class="mt-4 flex justify-center gap-4">
+                                <button id="dtSmallBtn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-amber-600 transition-colors">DT Pequeño</button>
+                                <button id="dtLargeBtn" class="bg-stone-500 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-stone-600 transition-colors">DT Grande</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tema 3: Modelos en Bloques -->
+                <section id="content-bloques" class="content-section">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <article>
+                            <h2 class="text-2xl font-bold text-amber-600 mb-4">Tema 3: Modelos Formados por Varios Bloques</h2>
+                            <div class="space-y-4 text-stone-700">
+                                <p>Los sistemas complejos se modelan mejor dividiéndolos en bloques o módulos interconectados. Este enfoque modular ayuda a gestionar la complejidad, facilita la colaboración y mejora la claridad del modelo.</p>
+                                <p>El diagrama de la derecha ilustra una cadena de suministro simplificada con cuatro bloques principales. Pase el cursor sobre cada bloque para resaltarlo y ver una breve descripción de su función. Observe cómo están conectados, mostrando el flujo de influencia a través del sistema. Por ejemplo, la "Demanda del Cliente" impulsa la "Producción", que a su vez afecta al "Inventario" y la "Logística".</p>
+                            </div>
+                            <div id="block-info" class="mt-4 p-4 bg-stone-100 rounded-lg text-stone-700 min-h-[80px]">
+                                <p class="italic">Pase el cursor sobre un bloque para ver los detalles.</p>
+                            </div>
+                        </article>
+                        <div class="p-4 md:p-8 flex items-center justify-center">
+                            <div class="block-diagram-grid w-full max-w-md">
+                                <div data-info="Representa las órdenes de los clientes y las fluctuaciones del mercado." class="block bg-blue-200 text-blue-800 p-4 rounded-lg shadow-md text-center font-semibold w-full">Demanda del Cliente</div>
+                                <div class="connector connector-h relative"><div class="absolute w-full h-full top-0 left-0"></div></div>
+                                <div data-info="Modela la capacidad de fabricación, la tasa de producción y los problemas de calidad." class="block bg-green-200 text-green-800 p-4 rounded-lg shadow-md text-center font-semibold w-full">Producción</div>
+                                
+                                <div class="w-full flex justify-center"><div class="connector connector-v relative h-16"><div class="absolute w-full h-full top-0 left-0"></div></div></div>
+                                <div></div>
+                                <div class="w-full flex justify-center"><div class="connector connector-v relative h-16"><div class="absolute w-full h-full top-0 left-0"></div></div></div>
+                                
+                                <div data-info="Simula el transporte, los tiempos de entrega y los costos asociados." class="block bg-purple-200 text-purple-800 p-4 rounded-lg shadow-md text-center font-semibold w-full">Logística</div>
+                                <div class="connector connector-h relative"><div class="absolute w-full h-full top-0 left-0"></div></div>
+                                <div data-info="Gestiona los niveles de stock de materias primas y productos terminados." class="block bg-yellow-200 text-yellow-800 p-4 rounded-lg shadow-md text-center font-semibold w-full">Inventario</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tema 4: Métodos de Integración -->
+                <section id="content-integracion" class="content-section">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <article>
+                            <h2 class="text-2xl font-bold text-amber-600 mb-4">Tema 4: Importancia del Método de Integración</h2>
+                            <div class="space-y-4 text-stone-700">
+                                <p>Los modelos de dinámica de sistemas resuelven ecuaciones diferenciales numéricamente. El método de integración elegido afecta directamente la precisión y estabilidad de los resultados. </p>
+                                <p>Esta simulación muestra la propagación de una vulnerabilidad de seguridad. Compare el método de "Euler", simple pero propenso a errores, con el más robusto "Runge-Kutta (RK4)". Use los botones para cambiar de método y observe cómo el método de Euler se desvía de la solución "Real", sobrestimando el problema, mientras que RK4 se mantiene preciso. Esto demuestra por qué elegir un buen método de integración es fundamental para obtener resultados fiables.</p>
+                            </div>
+                        </article>
+                         <div>
+                             <div class="chart-container">
+                                <canvas id="integrationChart"></canvas>
+                            </div>
+                            <div class="mt-4 flex justify-center gap-4">
+                                <button id="eulerBtn" class="bg-stone-500 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-stone-600 transition-colors">Método Euler</button>
+                                <button id="rk4Btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-amber-600 transition-colors">Método RK4</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <hr class="my-12 border-stone-200">
+            
+            <!-- Tema 5: Ejemplos -->
+            <section id="examples" class="mt-8">
+                <h2 class="text-3xl font-bold text-center text-stone-900 mb-2">Tema 5: Campos de Aplicación</h2>
+                <p class="text-center text-stone-600 mb-8 max-w-3xl mx-auto">La Dinámica de Sistemas es una metodología versátil utilizada para modelar y analizar sistemas complejos en una amplia variedad de dominios.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-stone-100 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-lg text-stone-800">Ingeniería de Sistemas</h3>
+                        <p class="text-stone-600 mt-2">Gestión de proyectos, optimización de arquitecturas de software, planificación de capacidad de infraestructura y análisis de ciberseguridad.</p>
+                    </div>
+                    <div class="bg-stone-100 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-lg text-stone-800">Economía y Negocios</h3>
+                        <p class="text-stone-600 mt-2">Modelado de ciclos económicos, estrategias de mercado, dinámicas de crecimiento empresarial y gestión de la cadena de suministro.</p>
+                    </div>
+                    <div class="bg-stone-100 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-lg text-stone-800">Salud Pública</h3>
+                        <p class="text-stone-600 mt-2">Simulación de la propagación de epidemias, evaluación de políticas de salud, gestión de recursos hospitalarios y campañas de vacunación.</p>
+                    </div>
+                     <div class="bg-stone-100 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-lg text-stone-800">Medio Ambiente</h3>
+                        <p class="text-stone-600 mt-2">Análisis del cambio climático, gestión sostenible de recursos naturales, dinámicas de contaminación y políticas energéticas.</p>
+                    </div>
+                     <div class="bg-stone-100 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-lg text-stone-800">Ciencias Sociales</h3>
+                        <p class="text-stone-600 mt-2">Estudio de dinámicas demográficas, difusión de información y desinformación, urbanismo y comportamiento de grupos.</p>
+                    </div>
+                     <div class="bg-stone-100 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-bold text-lg text-stone-800">Gestión de la Innovación</h3>
+                        <p class="text-stone-600 mt-2">Simulación del ciclo de vida de productos, adopción de nuevas tecnologías, inversión en I+D y competencia en el mercado.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 text-stone-500">
+            <p>&copy; 2025 Explorador Interactivo de Dinámica de Sistemas. Creado para facilitar la comprensión de sistemas complejos.</p>
+        </footer>
+
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // State and navigation
+    const navButtons = document.querySelectorAll('.nav-tab');
+    const contentSections = document.querySelectorAll('.content-section');
+    const navContainer = document.getElementById('main-nav');
+
+    function setActiveTab(tabName) {
+        navButtons.forEach(btn => {
+            if (btn.dataset.tab === tabName) {
+                btn.classList.add('tab-active');
+                btn.classList.remove('tab-inactive');
+            } else {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            }
+        });
+        contentSections.forEach(section => {
+            section.style.display = section.id === `content-${tabName}` ? 'block' : 'none';
+        });
+    }
+
+    navContainer.addEventListener('click', (e) => {
+        if (e.target.matches('.nav-tab')) {
+            const tabName = e.target.dataset.tab;
+            setActiveTab(tabName);
+        }
+    });
+
+    // Chart.js global settings
+    Chart.defaults.font.family = 'Inter';
+    Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.tooltip.backgroundColor = '#292524';
+    Chart.defaults.plugins.tooltip.titleFont = { size: 16, weight: 'bold' };
+    Chart.defaults.plugins.tooltip.bodyFont = { size: 14 };
+    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    
+    let multiplierChart, dtChart, integrationChart;
+
+    // --- TEMA 1: MULTIPLIER CHART ---
+    const multiplierCtx = document.getElementById('multiplierChart').getContext('2d');
+    const resistanceSlider = document.getElementById('resistanceSlider');
+    const resistanceValue = document.getElementById('resistanceValue');
+
+    function getAdoptionData(resistance) {
+        const time = Array.from({ length: 21 }, (_, i) => i);
+        const linearAdoption = time.map(t => Math.min(100, 5 * t));
+        const sCurve = time.map(t => 100 / (1 + Math.exp(- (t - 10) / resistance)));
+        return { time, linearAdoption, sCurve };
+    }
+
+    function createMultiplierChart(initialResistance) {
+        const data = getAdoptionData(initialResistance);
+        resistanceValue.textContent = initialResistance.toFixed(1);
+        multiplierChart = new Chart(multiplierCtx, {
+            type: 'line',
+            data: {
+                labels: data.time,
+                datasets: [
+                    {
+                        label: 'Sin Multiplicador (Lineal)',
+                        data: data.linearAdoption,
+                        borderColor: '#78716c',
+                        backgroundColor: '#78716c20',
+                        tension: 0.1,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Con Multiplicador (Saturación)',
+                        data: data.sCurve,
+                        borderColor: '#f59e0b',
+                        backgroundColor: '#f59e0b20',
+                        tension: 0.4,
+                        borderWidth: 4,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Adopción de Tecnología (%)' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Tiempo (Semanas)' }
+                    }
+                },
+                plugins: {
+                    title: { display: true, text: 'Efecto de un Multiplicador en la Adopción', font: { size: 16 } }
+                }
+            }
+        });
+    }
+
+    resistanceSlider.addEventListener('input', (e) => {
+        const newResistance = parseFloat(e.target.value);
+        resistanceValue.textContent = newResistance.toFixed(1);
+        const newData = getAdoptionData(newResistance);
+        multiplierChart.data.datasets[1].data = newData.sCurve;
+        multiplierChart.update();
+    });
+
+    // --- TEMA 2: DT CHART ---
+    const dtCtx = document.getElementById('dtChart').getContext('2d');
+    const dtSmallBtn = document.getElementById('dtSmallBtn');
+    const dtLargeBtn = document.getElementById('dtLargeBtn');
+
+    function getDtData() {
+        const realData = [];
+        for (let i = 0; i < 100; i++) {
+            realData.push(50 + 45 * Math.sin(i * Math.PI / 10));
+        }
+        const dtSmall = realData.filter((_, i) => i % 2 === 0);
+        const dtLarge = realData.filter((_, i) => i % 20 === 0);
+        const labelsSmall = Array.from({length: 50}, (_,i)=> i*2);
+        const labelsLarge = Array.from({length: 5}, (_,i)=> i*20);
+
+        return { realData, dtSmall, dtLarge, labelsSmall, labelsLarge };
+    }
+    
+    function createDtChart() {
+        const data = getDtData();
+        dtChart = new Chart(dtCtx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length:100}, (_,i)=>i),
+                datasets: [
+                    {
+                        label: 'Carga Real del Servidor',
+                        data: data.realData,
+                        borderColor: '#a8a29e',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Simulación (DT Pequeño)',
+                        data: data.realData, // Start with small DT
+                        borderColor: '#f59e0b',
+                        backgroundColor: '#f59e0b20',
+                        borderWidth: 4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#f59e0b',
+                        tension: 0.4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 110,
+                        title: { display: true, text: 'Uso de CPU (%)' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Tiempo (Segundos)' }
+                    }
+                },
+                plugins: {
+                    title: { display: true, text: 'Impacto del Intervalo de Tiempo (DT) en la Simulación', font: { size: 16 } }
+                }
+            }
+        });
+    }
+
+    dtSmallBtn.addEventListener('click', () => {
+        const data = getDtData();
+        dtChart.data.datasets[1].label = 'Simulación (DT Pequeño)';
+        dtChart.data.datasets[1].data = data.realData;
+        dtChart.update();
+    });
+
+    dtLargeBtn.addEventListener('click', () => {
+        const data = getDtData();
+        const sparseData = data.realData.map((val, i) => i % 20 === 0 ? val : NaN);
+        dtChart.data.datasets[1].label = 'Simulación (DT Grande)';
+        dtChart.data.datasets[1].data = sparseData;
+        dtChart.update();
+    });
+
+
+    // --- TEMA 3: BLOCK DIAGRAM ---
+    const blocks = document.querySelectorAll('.block');
+    const blockInfoPanel = document.getElementById('block-info');
+    const defaultBlockInfo = blockInfoPanel.innerHTML;
+
+    blocks.forEach(block => {
+        block.addEventListener('mouseenter', () => {
+            block.style.transform = 'scale(1.05)';
+            block.style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)';
+            blockInfoPanel.innerHTML = `<p class="font-semibold">${block.textContent}:</p><p>${block.dataset.info}</p>`;
+        });
+        block.addEventListener('mouseleave', () => {
+            block.style.transform = 'scale(1)';
+            block.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+            blockInfoPanel.innerHTML = defaultBlockInfo;
+        });
+    });
+
+    // --- TEMA 4: INTEGRATION CHART ---
+    const integrationCtx = document.getElementById('integrationChart').getContext('2d');
+    const eulerBtn = document.getElementById('eulerBtn');
+    const rk4Btn = document.getElementById('rk4Btn');
+    
+    function getIntegrationData() {
+        const time = Array.from({length: 21}, (_,i)=>i);
+        const realSolution = time.map(t => 100 / (1 + 99 * Math.exp(-0.4 * t)));
+        
+        // Euler method simulation
+        let eulerSolution = [1];
+        for(let i=0; i < 20; i++) {
+            let current = eulerSolution[i];
+            let next = current + 0.5 * current * (1 - current/100) * 2; // DT=2, large step to show error
+            eulerSolution.push(next);
+        }
+
+        // RK4 (simulated as being very close to real for illustration)
+        let rk4Solution = [1];
+        for (let i = 0; i < 20; i++) {
+            let y = rk4Solution[i];
+            let dt = 1;
+            let k1 = 0.4 * y * (1 - y / 100);
+            let k2 = 0.4 * (y + 0.5 * dt * k1) * (1 - (y + 0.5 * dt * k1) / 100);
+            let k3 = 0.4 * (y + 0.5 * dt * k2) * (1 - (y + 0.5 * dt * k2) / 100);
+            let k4 = 0.4 * (y + dt * k3) * (1 - (y + dt * k3) / 100);
+            let next = y + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
+            rk4Solution.push(next);
+        }
+
+        return { time, realSolution, eulerSolution, rk4Solution };
+    }
+
+    function createIntegrationChart() {
+        const data = getIntegrationData();
+        integrationChart = new Chart(integrationCtx, {
+            type: 'line',
+            data: {
+                labels: data.time,
+                datasets: [
+                     {
+                        label: 'Solución Real',
+                        data: data.realSolution,
+                        borderColor: '#a8a29e',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                    },
+                    {
+                        label: 'Simulación (RK4)',
+                        data: data.rk4Solution,
+                        borderColor: '#f59e0b',
+                        backgroundColor: '#f59e0b20',
+                        borderWidth: 4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#f59e0b',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                     y: {
+                        beginAtZero: true,
+                        max: 120,
+                        title: { display: true, text: 'Sistemas Infectados (%)' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Tiempo (Horas)' }
+                    }
+                },
+                 plugins: {
+                    title: { display: true, text: 'Comparación de Métodos de Integración', font: { size: 16 } }
+                }
+            }
+        });
+    }
+
+    eulerBtn.addEventListener('click', () => {
+        const data = getIntegrationData();
+        integrationChart.data.datasets[1].label = 'Simulación (Euler)';
+        integrationChart.data.datasets[1].data = data.eulerSolution;
+        integrationChart.data.datasets[1].borderColor = '#78716c';
+        integrationChart.data.datasets[1].pointBackgroundColor = '#78716c';
+        integrationChart.data.datasets[1].backgroundColor = '#78716c20';
+        integrationChart.update();
+    });
+
+    rk4Btn.addEventListener('click', () => {
+        const data = getIntegrationData();
+        integrationChart.data.datasets[1].label = 'Simulación (RK4)';
+        integrationChart.data.datasets[1].data = data.rk4Solution;
+        integrationChart.data.datasets[1].borderColor = '#f59e0b';
+        integrationChart.data.datasets[1].pointBackgroundColor = '#f59e0b';
+        integrationChart.data.datasets[1].backgroundColor = '#f59e0b20';
+        integrationChart.update();
+    });
+
+
+    // Initial setup
+    setActiveTab('multiplicadores');
+    createMultiplierChart(parseFloat(resistanceSlider.value));
+    createDtChart();
+    createIntegrationChart();
+});
+</script>
+</body>
+</html>
+

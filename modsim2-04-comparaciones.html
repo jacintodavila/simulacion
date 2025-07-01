@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación Interactiva de Diseños de Sistemas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Ingeniería Serena -->
+    <!-- Application Structure Plan: La aplicación está diseñada en torno al ejemplo del sistema ATM para proporcionar un hilo narrativo. Se divide en secciones temáticas accesibles a través de una barra de navegación fija: 1) Introducción al problema, 2) Una herramienta interactiva de comparación de diseños (AHP con sliders y un gráfico de radar) que combina los temas 1 y 2 del informe, y 3) Una sección de análisis de rendimiento que utiliza un gráfico de barras para explicar la diferencia entre modelos de simulación y metamodelos (temas 3 y 4). Esta estructura transforma el contenido pasivo del informe en una experiencia de aprendizaje activo, donde el usuario explora los conceptos a través de la interacción directa en un caso de estudio práctico, mejorando la comprensión y el engagement. -->
+    <!-- Visualization & Content Choices: 1) Presentación de Diseños: Reporte -> 3 diseños ATM. Meta -> Informar. Visualización -> Tarjetas con Tailwind y caracteres Unicode. Interacción -> Ninguna. Justificación -> Claridad y simplicidad. 2) Comparación (AHP): Reporte -> Criterios de evaluación. Meta -> Comparar. Visualización -> Gráfico de Radar (Chart.js) y Sliders HTML. Interacción -> El usuario ajusta los pesos de los criterios con sliders, el gráfico de radar y un texto resumen se actualizan en tiempo real. Justificación -> El gráfico de radar es ideal para comparar múltiples opciones a través de varios criterios. La interacción directa con los pesos demuestra de forma tangible el proceso de toma de decisiones multicriterio. 3) Rendimiento/Metamodelado: Reporte -> Modelos estadísticos y metamodelos. Meta -> Explicar un concepto complejo. Visualización -> Gráfico de Barras (Chart.js). Interacción -> Botones para cambiar entre 'Simulación Detallada' y 'Metamodelo'. Justificación -> Simplifica la idea abstracta del metamodelado al mostrar un resultado tangible (estimación rápida vs. detallada) y una explicación contextual que cambia con la selección del usuario. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 450px;
+                max-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-stone-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl font-bold text-sky-800">Evaluación de Diseños</h1>
+                <div class="hidden sm:flex sm:space-x-8">
+                    <a href="#desafio" class="text-stone-600 hover:text-sky-700 transition-colors">El Desafío</a>
+                    <a href="#comparacion" class="text-stone-600 hover:text-sky-700 transition-colors">Comparación</a>
+                    <a href="#analisis" class="text-stone-600 hover:text-sky-700 transition-colors">Análisis</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        
+        <section class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-sky-900 mb-4">Comparación y Evaluación de Diseños Alternativos</h2>
+            <p class="max-w-3xl mx-auto text-lg text-stone-600">
+                En ingeniería de sistemas, elegir el diseño correcto es crucial. Esta herramienta interactiva explora los métodos para evaluar y comparar diferentes diseños, utilizando un caso práctico: la creación de un nuevo Sistema de Gestión de Tráfico Aéreo (ATM).
+            </p>
+        </section>
+
+        <section id="desafio" class="mb-20 pt-16">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-sky-900 mb-3">El Desafío: Un Nuevo Sistema ATM</h3>
+                <p class="max-w-3xl mx-auto text-stone-600">
+                    Nos enfrentamos a la tarea de seleccionar la arquitectura para un sistema de gestión de tráfico aéreo de próxima generación. Existen tres propuestas principales sobre la mesa, cada una con sus propias fortalezas y debilidades. Nuestra misión es evaluarlas sistemáticamente para tomar la mejor decisión.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <div class="text-5xl mb-4">🌐</div>
+                    <h4 class="text-xl font-bold text-sky-800 mb-2">Diseño A: Arquitectura Distribuida</h4>
+                    <p class="text-stone-600">Comunicación P2P entre controladores. Ofrece alta resiliencia y escalabilidad, pero la consistencia de los datos puede ser un desafío.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <div class="text-5xl mb-4">🖥️</div>
+                    <h4 class="text-xl font-bold text-sky-800 mb-2">Diseño B: Arquitectura Centralizada</h4>
+                    <p class="text-stone-600">Un servidor principal gestiona todos los datos. Garantiza la consistencia y simplifica la gestión, pero es un punto único de fallo.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <div class="text-5xl mb-4">🔗</div>
+                    <h4 class="text-xl font-bold text-sky-800 mb-2">Diseño C: Arquitectura Híbrida</h4>
+                    <p class="text-stone-600">Combina elementos de ambos mundos. Busca un equilibrio entre la resiliencia de la red distribuida y el control de la centralizada.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparacion" class="mb-20 pt-16">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-sky-900 mb-3">Métodos de Comparación Multicriterio</h3>
+                <p class="max-w-3xl mx-auto text-stone-600">
+                    Para comparar varios diseños, usamos métodos como el Proceso Analítico Jerárquico (AHP). Esto nos permite ponderar la importancia de diferentes criterios. Ajuste los controles deslizantes para reflejar sus prioridades y observe cómo cambia la evaluación.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <h4 class="text-lg font-semibold mb-4 text-center">Pondere la Importancia de Cada Criterio:</h4>
+                    <div id="criteria-sliders" class="space-y-4"></div>
+                </div>
+                <div>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div id="decision-summary" class="mt-4 text-center bg-sky-100 p-4 rounded-lg border border-sky-200">
+                        <p class="font-semibold text-sky-800">Ajuste los pesos para ver el análisis.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="analisis" class="pt-16">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-sky-900 mb-3">Análisis de Rendimiento y Metamodelado</h3>
+                <p class="max-w-3xl mx-auto text-stone-600">
+                    Algunos criterios, como el rendimiento, requieren un análisis más profundo mediante simulación. Sin embargo, las simulaciones detalladas son costosas. El metamodelado crea modelos simplificados para obtener estimaciones rápidas. Seleccione un tipo de simulación para comparar los resultados y entender el concepto.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                 <div>
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <h4 class="text-lg font-semibold mb-2 text-center">Tipo de Simulación:</h4>
+                     <div class="flex justify-center space-x-4 mb-4">
+                        <button id="btn-meta" class="px-4 py-2 rounded-md bg-sky-600 text-white font-semibold transition">Metamodelo (Rápida)</button>
+                        <button id="btn-full" class="px-4 py-2 rounded-md bg-stone-200 text-stone-700 font-semibold transition">Simulación Completa</button>
+                    </div>
+                    <div id="metamodel-explanation" class="p-4 bg-stone-100 rounded-lg text-stone-700">
+                        <h5 class="font-bold mb-2">Seleccione un tipo de simulación.</h5>
+                        <p>Cada opción tiene un propósito diferente en el ciclo de diseño.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-800 text-white mt-20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-stone-400">
+            <p>&copy; 2025 Explorador de Diseño de Sistemas. Una aplicación para ilustrar conceptos de Ingeniería de Sistemas.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const criteria = [
+                { id: 'seguridad', name: 'Seguridad', baseScores: { a: 8, b: 7, c: 9 } },
+                { id: 'rendimiento', name: 'Rendimiento', baseScores: { a: 9, b: 6, c: 8 } },
+                { id: 'costo', name: 'Costo de Implementación', baseScores: { a: 5, b: 9, c: 6 } },
+                { id: 'escalabilidad', name: 'Escalabilidad', baseScores: { a: 9, b: 5, c: 7 } },
+                { id: 'mantenimiento', name: 'Facilidad de Mantenimiento', baseScores: { a: 6, b: 8, c: 7 } }
+            ];
+
+            const designNames = {
+                a: 'Diseño A (Distribuido)',
+                b: 'Diseño B (Centralizado)',
+                c: 'Diseño C (Híbrido)'
+            };
+
+            const slidersContainer = document.getElementById('criteria-sliders');
+            criteria.forEach(criterion => {
+                const sliderHTML = `
+                    <div class="px-2">
+                        <label for="${criterion.id}" class="block mb-1 text-sm font-medium text-stone-700">${criterion.name}</label>
+                        <input id="${criterion.id}" type="range" min="1" max="10" value="5" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-sky-600">
+                    </div>
+                `;
+                slidersContainer.innerHTML += sliderHTML;
+            });
+            
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            let radarChart;
+
+            function calculateScores() {
+                const weights = {};
+                let totalWeight = 0;
+                criteria.forEach(c => {
+                    const weight = parseInt(document.getElementById(c.id).value);
+                    weights[c.id] = weight;
+                    totalWeight += weight;
+                });
+                
+                // Normalize weights
+                if(totalWeight > 0) {
+                    for (const key in weights) {
+                        weights[key] = weights[key] / totalWeight;
+                    }
+                }
+
+                const finalScores = { a: 0, b: 0, c: 0 };
+                const radarScores = { a: [], b: [], c: [] };
+
+                criteria.forEach(c => {
+                    const weightedScoreA = c.baseScores.a * weights[c.id];
+                    const weightedScoreB = c.baseScores.b * weights[c.id];
+                    const weightedScoreC = c.baseScores.c * weights[c.id];
+                    
+                    finalScores.a += weightedScoreA;
+                    finalScores.b += weightedScoreB;
+                    finalScores.c += weightedScoreC;
+                    
+                    radarScores.a.push(c.baseScores.a);
+                    radarScores.b.push(c.baseScores.b);
+                    radarScores.c.push(c.baseScores.c);
+                });
+
+                return { finalScores, radarScores, weights };
+            }
+
+            function updateRadarChart() {
+                const { finalScores, radarScores } = calculateScores();
+                
+                if (radarChart) {
+                    radarChart.destroy();
+                }
+
+                radarChart = new Chart(radarCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: criteria.map(c => c.name.replace(' de Implementación', '')),
+                        datasets: [
+                            {
+                                label: designNames.a,
+                                data: radarScores.a,
+                                backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                                borderColor: 'rgba(56, 189, 248, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(56, 189, 248, 1)'
+                            },
+                            {
+                                label: designNames.b,
+                                data: radarScores.b,
+                                backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                                borderColor: 'rgba(244, 63, 94, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(244, 63, 94, 1)'
+                            },
+                             {
+                                label: designNames.c,
+                                data: radarScores.c,
+                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(16, 185, 129, 1)'
+                            }
+                        ]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                                pointLabels: { font: { size: 12 } },
+                                suggestedMin: 0,
+                                suggestedMax: 10
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        }
+                    }
+                });
+                
+                updateSummary(finalScores);
+            }
+
+            function updateSummary(scores) {
+                const summaryEl = document.getElementById('decision-summary');
+                const winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                
+                summaryEl.innerHTML = `
+                    <p class="font-bold text-lg mb-1 text-sky-900">Resultado del Análisis:</p>
+                    <p class="text-stone-700">Según las prioridades establecidas, la opción preferida es el <span class="font-bold">${designNames[winner]}</span>.</p>
+                `;
+            }
+
+            slidersContainer.addEventListener('input', updateRadarChart);
+            updateRadarChart();
+
+            // Performance Chart Logic
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            const performanceData = {
+                labels: ['Latencia (ms)', 'Carga de Trabajo (%)', 'Tasa de Fallos (%)'],
+                full: {
+                    a: [25, 60, 1.5],
+                    b: [15, 85, 4.0],
+                    c: [20, 70, 2.0]
+                },
+                meta: {
+                    a: [28, 65, 1.8],
+                    b: [18, 82, 4.5],
+                    c: [23, 72, 2.3]
+                }
+            };
+            let performanceChart;
+            const btnMeta = document.getElementById('btn-meta');
+            const btnFull = document.getElementById('btn-full');
+            const explanationEl = document.getElementById('metamodel-explanation');
+
+            function updatePerformanceChart(type = 'meta') {
+                const data = performanceData[type];
+                
+                btnMeta.classList.toggle('bg-sky-600', type === 'meta');
+                btnMeta.classList.toggle('text-white', type === 'meta');
+                btnMeta.classList.toggle('bg-stone-200', type !== 'meta');
+                btnMeta.classList.toggle('text-stone-700', type !== 'meta');
+                
+                btnFull.classList.toggle('bg-sky-600', type === 'full');
+                btnFull.classList.toggle('text-white', type === 'full');
+                btnFull.classList.toggle('bg-stone-200', type !== 'full');
+                btnFull.classList.toggle('text-stone-700', type !== 'full');
+
+                if (performanceChart) {
+                    performanceChart.destroy();
+                }
+
+                performanceChart = new Chart(performanceCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: performanceData.labels,
+                        datasets: [
+                            { label: 'Diseño A', data: data.a, backgroundColor: 'rgba(56, 189, 248, 0.7)' },
+                            { label: 'Diseño B', data: data.b, backgroundColor: 'rgba(244, 63, 94, 0.7)' },
+                            { label: 'Diseño C', data: data.c, backgroundColor: 'rgba(16, 185, 129, 0.7)' }
+                        ]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } },
+                        plugins: { legend: { position: 'top' } },
+                        indexAxis: 'y'
+                    }
+                });
+                
+                if (type === 'meta') {
+                    explanationEl.innerHTML = `
+                        <h5 class="font-bold mb-2 text-sky-800">Metamodelo (Estimación Rápida)</h5>
+                        <p>Este modelo es una aproximación simplificada. No es 100% preciso, pero proporciona resultados casi instantáneos. Es ideal para explorar rápidamente miles de variaciones de diseño en las etapas iniciales, descartando opciones claramente inferiores sin el alto costo de una simulación completa.</p>
+                    `;
+                } else {
+                     explanationEl.innerHTML = `
+                        <h5 class="font-bold mb-2 text-sky-800">Simulación Completa (Análisis Detallado)</h5>
+                        <p>Este es un modelo de alta fidelidad que simula el sistema con gran detalle. Es computacionalmente costoso y lento, pero ofrece resultados muy precisos. Se utiliza para la evaluación final de un número reducido de diseños prometedores antes de tomar la decisión final.</p>
+                    `;
+                }
+            }
+            
+            btnMeta.addEventListener('click', () => updatePerformanceChart('meta'));
+            btnFull.addEventListener('click', () => updatePerformanceChart('full'));
+
+            updatePerformanceChart('meta');
+        });
+    </script>
+</body>
+</html>
+

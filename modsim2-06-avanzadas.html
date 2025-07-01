@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador de Simulación Avanzada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutrals & Subtle Accent (Stone & Teal) -->
+    <!-- Application Structure Plan: A tab-based "concept explorer" SPA. The user selects a core topic (Cambio Estructural, Simulación Paralela, Técnicas Emergentes) via prominent buttons. The main content area dynamically updates to show a detailed explanation and a custom-built interactive visualization/simulation for the chosen topic. For the AI section, sub-navigation allows drilling down into Neural Networks and Genetic Algorithms. This structure was chosen over a linear document to facilitate comparison, focus user attention, and make abstract concepts more tangible and memorable through targeted, hands-on interactions, thus transforming a static report into an active learning tool. -->
+    <!-- Visualization & Content Choices: 
+        - Cambio Estructural: Goal=Explain system adaptation. Viz=HTML/CSS diagram showing an "air traffic" system. Interaction=Button to toggle a "new runway," visually altering the system's structure. Justification=Visually demonstrates structural modification. Method=JS toggle, CSS transitions.
+        - Simulación Paralela: Goal=Compare processing speeds. Viz=Side-by-side animated "task grids" for sequential vs. parallel processing. Interaction=Button to run the animation, showing the parallel grid finishing faster. Justification=Clear, tangible demonstration of the speed-up concept. Method=JS animation loop.
+        - Redes Neuronales: Goal=Illustrate learning/prediction. Viz=Interactive diagram (Inputs -> NN Black Box -> Output). Interaction=User clicks input icons (e.g., occupancy, weather), and the output (energy prediction) updates via JS logic. Justification=Makes the abstract prediction process interactive and intuitive. Method=JS click handlers.
+        - Algoritmos Genéticos: Goal=Show optimization via evolution. Viz=Simplified grid representing "delivery routes." Interaction=Button to "evolve," which visually improves one route (the "fittest") and discards another. Justification=Demystifies the evolutionary process in a simple, step-by-step visual. Method=JS logic to update CSS classes.
+        - All text content is sourced from the report and contextualized within these interactive sections.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        .nav-btn {
+            transition: all 0.3s ease;
+        }
+        .nav-btn.active {
+            background-color: #0d9488; /* teal-600 */
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .interactive-box {
+            border: 1px solid #e7e5e4; /* stone-200 */
+            background-color: #fafaf9; /* stone-50 */
+        }
+        .task-block {
+            width: 1rem;
+            height: 1rem;
+            background-color: #d6d3d1; /* stone-300 */
+            transition: background-color 0.5s ease;
+        }
+        .task-block.processing {
+            background-color: #fcd34d; /* amber-300 */
+        }
+        .task-block.done {
+            background-color: #4ade80; /* green-400 */
+        }
+        .diagram-arrow {
+            position: relative;
+            width: 100%;
+            height: 2px;
+            background-color: #a8a29e; /* stone-400 */
+        }
+        .diagram-arrow::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            top: -4px;
+            border: solid #a8a29e;
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 4px;
+            transform: rotate(-45deg);
+        }
+        .genetic-route {
+            transition: all 0.5s ease;
+            border-style: dashed;
+        }
+        .genetic-route.fittest {
+            border-color: #0d9488; /* teal-600 */
+            border-width: 2px;
+            border-style: solid;
+        }
+        .genetic-route.discarded {
+            opacity: 0.2;
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-bold text-teal-800">Explorador de Simulación Avanzada</h1>
+            <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">Una introducción interactiva a los temas recientes en la simulación para la ingeniería de sistemas.</p>
+        </header>
+
+        <nav class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+            <button data-topic="structural" class="nav-btn active text-sm md:text-base font-semibold py-2 px-4 rounded-lg bg-white shadow-sm border border-stone-200 hover:bg-teal-500 hover:text-white">Cambio Estructural</button>
+            <button data-topic="parallel" class="nav-btn text-sm md:text-base font-semibold py-2 px-4 rounded-lg bg-white shadow-sm border border-stone-200 hover:bg-teal-500 hover:text-white">Simulación Paralela</button>
+            <button data-topic="emergent" class="nav-btn text-sm md:text-base font-semibold py-2 px-4 rounded-lg bg-white shadow-sm border border-stone-200 hover:bg-teal-500 hover:text-white">Técnicas Emergentes (IA)</button>
+        </nav>
+
+        <main id="main-content" class="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg border border-stone-200 min-h-[500px]">
+
+            <!-- Tema 1: Cambio Estructural -->
+            <section id="structural" class="content-section active">
+                <h2 class="text-2xl font-bold text-teal-700 mb-3">Simulación del Cambio Estructural</h2>
+                <p class="mb-6 text-stone-600">Esta sección explora cómo los modelos de simulación pueden adaptarse para reflejar cambios fundamentales en la estructura de un sistema. A diferencia de los modelos estáticos, estos son vitales para sistemas dinámicos que evolucionan con el tiempo, como las redes de transporte o las infraestructuras críticas. La siguiente visualización demuestra este concepto.</p>
+
+                <div class="interactive-box rounded-lg p-6">
+                    <h3 class="font-semibold text-lg mb-4 text-center">Caso Práctico: Gestión de Tráfico Aéreo</h3>
+                    <p class="text-center text-sm text-stone-500 mb-6">Observe cómo el sistema responde a la adición de una nueva infraestructura.</p>
+                    
+                    <div id="air-traffic-system" class="w-full max-w-xl mx-auto p-4 border-2 border-dashed border-stone-300 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <div class="text-center">
+                                <span class="text-2xl">✈️</span>
+                                <p class="text-xs font-bold">Terminal A</p>
+                            </div>
+                            <div class="flex-grow mx-4">
+                                <div class="w-full h-2 bg-stone-400 rounded-full"></div>
+                                <p class="text-center text-xs mt-1">Pista 1</p>
+                            </div>
+                            <div id="new-runway" class="flex-grow mx-4 transition-opacity duration-1000 opacity-0">
+                                <div class="w-full h-2 bg-teal-400 rounded-full"></div>
+                                <p class="text-center text-xs mt-1 font-bold">Pista 2 (Nueva)</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-2xl">✈️</span>
+                                <p class="text-xs font-bold">Terminal B</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-6">
+                        <button id="toggle-change-btn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-700 transition">Introducir Cambio Estructural</button>
+                    </div>
+                </div>
+                <div class="mt-6 prose max-w-none text-stone-700">
+                    <p>La <strong>simulación del cambio estructural</strong> se refiere a la capacidad de un modelo para adaptarse a modificaciones significativas en la estructura o relaciones de un sistema. Como se ve en el ejemplo, el modelo no es estático; puede incorporar la "apertura" de una nueva pista. Esto permite a los ingenieros evaluar el impacto de estas reconfiguraciones en la eficiencia, los retrasos y la seguridad antes de que se realicen cambios operativos costosos en el mundo real.</p>
+                </div>
+            </section>
+
+            <!-- Tema 2: Simulación Paralela -->
+            <section id="parallel" class="content-section">
+                <h2 class="text-2xl font-bold text-teal-700 mb-3">Simulación Paralela</h2>
+                <p class="mb-6 text-stone-600">La simulación paralela acelera drásticamente el análisis de sistemas complejos dividiendo la carga de trabajo entre múltiples procesadores. Es esencial para modelar sistemas a gran escala como cadenas de suministro globales. La siguiente simulación compara el procesamiento secuencial con el paralelo para demostrar su ventaja en velocidad.</p>
+
+                <div class="interactive-box rounded-lg p-6">
+                     <h3 class="font-semibold text-lg mb-4 text-center">Comparación: Secuencial vs. Paralelo</h3>
+                     <p class="text-center text-sm text-stone-500 mb-6">Presione "Iniciar Simulación" para ver la diferencia en la velocidad de procesamiento de 32 tareas.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-semibold mb-2">Procesamiento Secuencial</h4>
+                            <div id="sequential-grid" class="grid grid-cols-8 gap-1 p-2 bg-stone-200 rounded"></div>
+                            <p id="sequential-time" class="text-center mt-2 font-mono text-sm"></p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">Procesamiento Paralelo (4 procesadores)</h4>
+                            <div id="parallel-grid" class="grid grid-cols-8 gap-1 p-2 bg-stone-200 rounded"></div>
+                            <p id="parallel-time" class="text-center mt-2 font-mono text-sm"></p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="run-parallel-sim-btn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-700 transition">Iniciar Simulación</button>
+                    </div>
+                </div>
+                 <div class="mt-6 prose max-w-none text-stone-700">
+                    <p>En lugar de procesar eventos uno por uno, la <strong>simulación paralela</strong> ejecuta múltiples partes de un modelo simultáneamente. En el ejemplo, el modelo paralelo finaliza mucho antes porque cuatro "procesadores" trabajan a la vez. Esto es crucial para analizar el rendimiento de sistemas masivos (redes, logística) en un tiempo razonable, permitiendo una toma de decisiones más rápida y robusta.</p>
+                </div>
+            </section>
+
+            <!-- Tema 3: Técnicas Emergentes (IA) -->
+            <section id="emergent" class="content-section">
+                <h2 class="text-2xl font-bold text-teal-700 mb-3">Técnicas Emergentes: IA en Simulación</h2>
+                <p class="mb-6 text-stone-600">La inteligencia artificial está revolucionando la simulación, permitiendo modelar comportamientos complejos y optimizar sistemas de maneras que antes eran imposibles. Esta sección explora dos de las técnicas más influyentes: las redes neuronales y los algoritmos genéticos. Utilice la navegación a continuación para explorar cada concepto.</p>
+
+                <div class="border-t border-stone-200 mt-6 pt-6">
+                     <div class="flex justify-center gap-4 mb-6">
+                         <button data-subtopic="nn" class="sub-nav-btn active text-teal-600 font-semibold border-b-2 border-teal-600 pb-1">Redes Neuronales</button>
+                         <button data-subtopic="ga" class="sub-nav-btn text-stone-500 font-semibold border-b-2 border-transparent pb-1 hover:text-teal-600">Algoritmos Genéticos</button>
+                     </div>
+
+                     <!-- Sub-tema: Redes Neuronales -->
+                     <div id="nn" class="sub-content-section active">
+                        <div class="interactive-box rounded-lg p-6">
+                            <h3 class="font-semibold text-lg mb-4 text-center">Caso Práctico: Gestión de Energía con Redes Neuronales</h3>
+                            <p class="text-center text-sm text-stone-500 mb-6">Seleccione las condiciones de entrada para ver cómo la red neuronal predice la demanda de energía.</p>
+                            <div class="flex flex-col md:flex-row items-center justify-around gap-4">
+                                <!-- Inputs -->
+                                <div class="text-center">
+                                    <h4 class="font-semibold mb-2">Condiciones de Entrada</h4>
+                                    <div class="flex gap-4">
+                                        <button data-input="low" class="nn-input p-3 rounded-lg border-2 border-stone-300 bg-white">
+                                            <span class="text-2xl">☁️</span>
+                                            <p class="text-xs">Baja Ocupación</p>
+                                        </button>
+                                        <button data-input="high" class="nn-input p-3 rounded-lg border-2 border-stone-300 bg-white">
+                                            <span class="text-2xl">☀️</span>
+                                            <p class="text-xs">Alta Ocupación</p>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Arrow -->
+                                <div class="w-24 mt-4 md:mt-0">
+                                    <div class="diagram-arrow"></div>
+                                </div>
+                                <!-- Black Box -->
+                                <div class="text-center">
+                                     <h4 class="font-semibold mb-2">Red Neuronal</h4>
+                                     <div class="p-4 border-2 border-stone-700 bg-stone-800 text-white rounded-lg">
+                                        <span class="text-3xl">🧠</span>
+                                        <p class="text-xs">Modelo Predictivo</p>
+                                     </div>
+                                </div>
+                                 <!-- Arrow -->
+                                <div class="w-24 mt-4 md:mt-0">
+                                    <div class="diagram-arrow"></div>
+                                </div>
+                                <!-- Output -->
+                                <div class="text-center">
+                                    <h4 class="font-semibold mb-2">Predicción de Salida</h4>
+                                    <div id="nn-output" class="p-4 w-40 h-20 flex items-center justify-center text-center bg-teal-100 text-teal-800 font-bold text-lg rounded-lg">
+                                        Seleccione entrada
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 prose max-w-none text-stone-700">
+                           <p>Las <strong>redes neuronales artificiales (RNA)</strong> son modelos que aprenden de los datos. En el ejemplo, la red aprende la relación entre la ocupación de un edificio, el clima y el consumo de energía. Al proporcionarle datos de entrada, predice la demanda energética, permitiendo a los ingenieros de sistemas diseñar controles de edificios inteligentes que optimizan el consumo de forma autónoma y eficiente.</p>
+                       </div>
+                     </div>
+                     <!-- Sub-tema: Algoritmos Genéticos -->
+                     <div id="ga" class="sub-content-section">
+                        <div class="interactive-box rounded-lg p-6">
+                            <h3 class="font-semibold text-lg mb-4 text-center">Caso Práctico: Optimización de Rutas con Algoritmos Genéticos</h3>
+                            <p class="text-center text-sm text-stone-500 mb-6">Cada "generación" evoluciona las soluciones para encontrar una ruta más corta. La ruta más "apta" se marca en verde.</p>
+                            <div class="relative w-full max-w-md mx-auto aspect-square bg-stone-200 rounded-lg grid grid-cols-5 grid-rows-5 gap-1 p-2">
+                                <div class="absolute top-2 left-2 text-xl">🏠</div>
+                                <div class="absolute bottom-2 right-2 text-xl">📦</div>
+                                <!-- Rutas se generan con JS -->
+                                <canvas id="ga-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+                            </div>
+                            <div class="text-center mt-6">
+                                <button id="run-ga-btn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-700 transition">Evolucionar Generación</button>
+                                <p id="ga-generation" class="text-sm mt-2 font-mono">Generación: 0</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 prose max-w-none text-stone-700">
+                           <p>Los <strong>algoritmos genéticos (AG)</strong> son técnicas de optimización inspiradas en la selección natural. Se crea una "población" de posibles soluciones (las rutas). En cada "generación", las mejores soluciones (las más cortas) se "cruzan" y "mutan" para crear una nueva generación, mejor que la anterior. Este proceso evolutivo permite a los ingenieros encontrar soluciones casi óptimas a problemas complejos como la logística, el diseño de redes o la planificación.</p>
+                       </div>
+                     </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const contentSections = document.querySelectorAll('.content-section');
+    const subNavButtons = document.querySelectorAll('.sub-nav-btn');
+    const subContentSections = document.querySelectorAll('.sub-content-section');
+
+    function switchTopic(topicId) {
+        navButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.topic === topicId);
+        });
+        contentSections.forEach(section => {
+            section.classList.toggle('active', section.id === topicId);
+        });
+    }
+
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switchTopic(button.dataset.topic);
+        });
+    });
+
+    function switchSubTopic(subTopicId) {
+        subNavButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.subtopic === subTopicId);
+            btn.classList.toggle('text-teal-600', btn.dataset.subtopic === subTopicId);
+            btn.classList.toggle('border-teal-600', btn.dataset.subtopic === subTopicId);
+            btn.classList.toggle('text-stone-500', btn.dataset.subtopic !== subTopicId);
+            btn.classList.toggle('border-transparent', btn.dataset.subtopic !== subTopicId);
+        });
+        subContentSections.forEach(section => {
+            section.classList.toggle('active', section.id === subTopicId);
+        });
+    }
+    
+    subNavButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switchSubTopic(button.dataset.subtopic);
+        });
+    });
+
+    // --- Lógica Intercativa ---
+
+    // 1. Simulación de Cambio Estructural
+    const toggleChangeBtn = document.getElementById('toggle-change-btn');
+    const newRunway = document.getElementById('new-runway');
+    let isChanged = false;
+    toggleChangeBtn.addEventListener('click', () => {
+        isChanged = !isChanged;
+        newRunway.classList.toggle('opacity-0', !isChanged);
+        newRunway.classList.toggle('opacity-100', isChanged);
+        toggleChangeBtn.textContent = isChanged ? 'Revertir Sistema' : 'Introducir Cambio Estructural';
+    });
+
+    // 2. Simulación Paralela
+    const runParallelSimBtn = document.getElementById('run-parallel-sim-btn');
+    const sequentialGrid = document.getElementById('sequential-grid');
+    const parallelGrid = document.getElementById('parallel-grid');
+    const sequentialTimeEl = document.getElementById('sequential-time');
+    const parallelTimeEl = document.getElementById('parallel-time');
+    const numTasks = 32;
+    
+    function createTaskBlocks(gridElement) {
+        gridElement.innerHTML = '';
+        for (let i = 0; i < numTasks; i++) {
+            const block = document.createElement('div');
+            block.classList.add('task-block');
+            gridElement.appendChild(block);
+        }
+    }
+
+    runParallelSimBtn.addEventListener('click', () => {
+        createTaskBlocks(sequentialGrid);
+        createTaskBlocks(parallelGrid);
+        runParallelSimBtn.disabled = true;
+        
+        const sequentialBlocks = sequentialGrid.children;
+        const parallelBlocks = parallelGrid.children;
+        let seqTime = 0, parTime = 0;
+        let seqDone = 0, parDone = 0;
+
+        // Simulación Secuencial
+        const seqInterval = setInterval(() => {
+            if (seqDone < numTasks) {
+                sequentialBlocks[seqDone].classList.add('done');
+                seqTime += 100;
+                sequentialTimeEl.textContent = `Tiempo: ${seqTime}ms`;
+                seqDone++;
+            } else {
+                clearInterval(seqInterval);
+                checkSimCompletion();
+            }
+        }, 100);
+
+        // Simulación Paralela (4 procesadores)
+        const processors = 4;
+        const parInterval = setInterval(() => {
+            if (parDone < numTasks) {
+                for (let i = 0; i < processors && (parDone + i) < numTasks; i++) {
+                    parallelBlocks[parDone + i].classList.add('done');
+                }
+                parDone += processors;
+                parTime += 100;
+                parallelTimeEl.textContent = `Tiempo: ${parTime}ms`;
+            } else {
+                clearInterval(parInterval);
+                checkSimCompletion();
+            }
+        }, 100);
+
+        function checkSimCompletion() {
+            if (seqDone === numTasks && parDone >= numTasks) {
+                runParallelSimBtn.disabled = false;
+            }
+        }
+    });
+    
+    // 3. Redes Neuronales
+    const nnInputs = document.querySelectorAll('.nn-input');
+    const nnOutput = document.getElementById('nn-output');
+    const predictions = {
+        low: 'Bajo (20 kW)',
+        high: 'Alto (85 kW)'
+    };
+    nnInputs.forEach(button => {
+        button.addEventListener('click', () => {
+            nnInputs.forEach(btn => btn.classList.remove('border-teal-500', 'bg-teal-50'));
+            button.classList.add('border-teal-500', 'bg-teal-50');
+            nnOutput.textContent = predictions[button.dataset.input];
+        });
+    });
+    
+    // 4. Algoritmos Genéticos
+    const runGaBtn = document.getElementById('run-ga-btn');
+    const gaCanvas = document.getElementById('ga-canvas');
+    const ctx = gaCanvas.getContext('2d');
+    let generation = 0;
+    
+    let routes = [];
+
+    function resizeCanvas() {
+        const parent = gaCanvas.parentElement;
+        gaCanvas.width = parent.clientWidth;
+        gaCanvas.height = parent.clientHeight;
+    }
+
+    function generateInitialRoutes() {
+        routes = [];
+        for (let i = 0; i < 3; i++) {
+            const route = {
+                points: [{x: 0, y: 0}],
+                length: 0,
+                status: 'normal'
+            };
+            let current = {x: 0, y: 0};
+            for (let j = 0; j < 4; j++) {
+                const next = {
+                    x: Math.floor(Math.random() * 5),
+                    y: Math.floor(Math.random() * 5)
+                };
+                route.points.push(next);
+                current = next;
+            }
+            route.points.push({x: 4, y: 4});
+            calculateLength(route);
+            routes.push(route);
+        }
+    }
+    
+    function calculateLength(route) {
+        let len = 0;
+        for (let i = 0; i < route.points.length - 1; i++) {
+            len += Math.hypot(route.points[i+1].x - route.points[i].x, route.points[i+1].y - route.points[i].y);
+        }
+        route.length = len;
+    }
+
+    function drawRoutes() {
+        ctx.clearRect(0, 0, gaCanvas.width, gaCanvas.height);
+        const cellWidth = gaCanvas.width / 5;
+        const cellHeight = gaCanvas.height / 5;
+
+        routes.forEach(route => {
+            ctx.beginPath();
+            const firstPoint = route.points[0];
+            ctx.moveTo((firstPoint.x + 0.5) * cellWidth, (firstPoint.y + 0.5) * cellHeight);
+
+            route.points.slice(1).forEach(p => {
+                ctx.lineTo((p.x + 0.5) * cellWidth, (p.y + 0.5) * cellHeight);
+            });
+            
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            
+            if (route.status === 'fittest') {
+                ctx.strokeStyle = '#0d9488'; // teal-600
+                ctx.lineWidth = 4;
+                ctx.setLineDash([]);
+            } else if (route.status === 'discarded') {
+                ctx.strokeStyle = 'rgba(168, 162, 158, 0.4)'; // stone-400 with alpha
+            } else {
+                ctx.strokeStyle = '#f97316'; // orange-500
+            }
+
+            ctx.stroke();
+        });
+    }
+
+    function evolve() {
+        if (routes.length === 0) return;
+        generation++;
+        document.getElementById('ga-generation').textContent = `Generación: ${generation}`;
+        
+        routes.sort((a, b) => a.length - b.length);
+        
+        const fittest = routes[0];
+        const worst = routes[routes.length - 1];
+
+        fittest.status = 'fittest';
+        worst.status = 'discarded';
+
+        // Create a new route based on the fittest, with a small "mutation"
+        const newRoute = JSON.parse(JSON.stringify(fittest));
+        newRoute.status = 'normal';
+        const mutationIndex = 1 + Math.floor(Math.random() * (newRoute.points.length - 2));
+        newRoute.points[mutationIndex] = {
+            x: Math.floor(Math.random() * 5),
+            y: Math.floor(Math.random() * 5)
+        };
+        calculateLength(newRoute);
+        
+        setTimeout(() => {
+            routes = [fittest, routes[1], newRoute];
+            routes.forEach(r => { if(r.status !== 'fittest') r.status = 'normal' });
+            drawRoutes();
+        }, 1000);
+
+        drawRoutes();
+    }
+    
+    runGaBtn.addEventListener('click', evolve);
+    
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        drawRoutes();
+    });
+
+    // Initial setup
+    createTaskBlocks(sequentialGrid);
+    createTaskBlocks(parallelGrid);
+    resizeCanvas();
+    generateInitialRoutes();
+    drawRoutes();
+});
+</script>
+
+</body>
+</html>
+
