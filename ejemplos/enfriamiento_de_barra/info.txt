@@ -1,0 +1,1 @@
+Ejercicio de Ecuacion diferencial Ordinaria de primer orden resuelto de forma analitica y simulado en GALATEA.
