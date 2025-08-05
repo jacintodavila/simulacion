@@ -1,0 +1,2 @@
+En este ejemplo se resuelve de forma analitica una EDO extraida del libro Cálculo - Trascendentes tempranas (Cuarta Edición ) de Dennis G. Zill y Warren S.Wright
+Tambien se presenta un modelo para simularla utilizando GALATEA.
