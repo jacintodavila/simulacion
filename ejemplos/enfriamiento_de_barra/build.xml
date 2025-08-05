@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- You may freely edit this file. See commented blocks below for -->
+<!-- some examples of how to customize the build. -->
+<!-- (If you delete it and reopen the project it will be recreated.) -->
+<project name="Example" default="all" basedir=".">
+    <description>
+      Compile, Run a Galata file Example.g
+    </description>
+    <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+
+    <!-- Classpath update -->
+    <property name="galateaPath" location="../../../galatea.jar"/>
+    <property name="javacupPath" location="../../../lib/javacup-runtime.jar"/>
+    <property name="jcommonPath" location="../../../lib/jcommon-1.0.15.jar"/>
+    <property name="jfreechartPath" location="../../../lib/jfreechart-1.0.12.jar"/>
+
+    <!-- Build .java files -->
+    <target name="g2java" depends="" description="Build Java files.">
+        <echo> Build Java files associated to ${ant.project.name} </echo>
+        <java classname="galatea.gcompiler.G2Java"
+            classpath="${galateaPath}:${javacupPath}"
+            dir="${basedir}"
+	    fork="true">
+            <arg value="${ant.project.name}.g" />
+        </java>
+    </target>
+
+    <!-- Build .class  files -->
+    <target name="compile" depends="" description="Compile Java files.">
+        <echo> Build .class associated to ${ant.project.name} </echo>
+        <javac srcdir="${basedir}" destdir="${basedir}"
+            includeantruntime="false"
+            classpath="${galateaPath}">
+        </javac>
+    </target>
+
+     <!-- Run .class  files -->
+    <target name="run" depends="" description="Run Class files.">
+        <echo> Run .class associated to ${ant.project.name} </echo>
+        <java classname="example.Model"
+            classpath="${basedir}:${galateaPath}:${jcommonPath}:${jfreechartPath}"
+            dir="${basedir}"
+	    fork="true">
+        </java>
+    </target>
+
+    <!-- Compile, Run and Check Example -->
+    <target name="all" depends="g2java,compile,run" description="Compile, Run and Check whole Example">
+    </target>
+
+    <!-- Clean generated files associated to Example -->
+    <target name="clean" depends="">
+	<delete>
+            <fileset dir="${basedir}" includes="**/*.class **/*.java **/*.dat **/*.trc **/*.sta **/*.txt"/>
+        </delete>
+        <delete includeemptydirs="true">
+            <fileset dir="${basedir}">
+                <type type="dir"/>
+            </fileset>
+        </delete>
+    </target>
+
+</project>
