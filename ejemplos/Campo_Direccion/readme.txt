@@ -23,6 +23,9 @@ Puedes instalar las librerías necesarias con este comando en la terminal o cons
     pip install numpy matplotlib
 
 CÓMO EJECUTAR EL PROGRAMA
+0. Configurar env, digamos ejemplo, y ejecutar
+   
+   source ./ejemplo/bin/activate
 --------------------------
 1. Guarda el código en un archivo con nombre: campo_direccion.py
 2. Abre la terminal (o símbolo del sistema en Windows).
@@ -45,3 +48,7 @@ DETALLES INTERNOS DEL CÓDIGO
 - Cada flecha muestra la dirección de crecimiento de la función solución.
 - Las pendientes están normalizadas para visualización uniforme.
 - Se usa 'quiver' de matplotlib para dibujar el campo de dirección.
+- Como desnormalizar las flechas? Usar: 
+    magnitude = dx**2 + dy**2
+  en lugar de:
+    magnitude = np.sqrt(dx**2 + dy**2)

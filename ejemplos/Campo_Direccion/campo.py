@@ -38,3 +38,5 @@ plt.xlim(-4, 4)
 plt.ylim(-4, 4)
 plt.gca().set_aspect('equal')  # Para que las pendientes se vean correctamente
 plt.show()
+
+
