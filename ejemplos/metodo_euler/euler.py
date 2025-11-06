@@ -65,7 +65,7 @@ ecuaciones = [
 
 # --- SELECCIÓN DEL MODELO A SIMULAR ---
 # Elige un número del 0 al 5 para seleccionar la ecuación de la lista de arriba.
-INDICE_DE_ECUACION_A_PROBAR = 0
+INDICE_DE_ECUACION_A_PROBAR = 3
 
 # Seleccionamos el diccionario de la ecuación activa
 ecuacion_activa = ecuaciones[INDICE_DE_ECUACION_A_PROBAR]
@@ -87,7 +87,7 @@ def metodo_euler(f, x0, y0, h, x_final):
 # --- PARÁMETROS DE LA SIMULACIÓN ---
 x0 = 0
 y0 = 1
-x_final = 2 # Ajusta según la ecuación seleccionada
+x_final = 5 # Ajusta según la ecuación seleccionada
 h1 = 0.5
 h2 = 0.1
 
