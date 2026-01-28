@@ -45,11 +45,11 @@ read_source(Filename, Tokens) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Esto corresponde al primer paso para escribir resumenes.
-% Consiste en dividir el texto en fases del pensamiento: p·rrafos, 
+% Consiste en dividir el texto en fases del pensamiento: p√°rrafos, 
 % oraciones y palabras.
 % leer_parrafo(-Atomos,-ProximoC)
-% lee una lÌnea del texto, separ·ndola en una lista de ·tomos.
-% ·tomo = p·rrafo, delimitado por el caracter especial de fin de 
+% lee una l√≠nea del texto, separ√°ndola en una lista de √°tomos.
+% √°tomo = p√°rrafo, delimitado por el caracter especial de fin de 
 % archivo.
 
 leer_parrafo(Atomos,ProximoC) :-
@@ -83,7 +83,7 @@ leer_resto_p(PrimerC,PrimerT,[Oracion|Atomos],ProximoCaracter) :-
         leer_resto_p(PC,ProximoT,Atomos,ProximoCaracter).
 
 % leer_atomos(-Atomos,-ProximoC)
-% lee una lÌnea del texto, separ·ndola en una lista de ·tomos
+% lee una l√≠nea del texto, separ√°ndola en una lista de √°tomos
 
 leer_atomos(Atomos,ProximoC) :-
         leer_caracter(PrimerC, PrimerT),
@@ -91,7 +91,7 @@ leer_atomos(Atomos,ProximoC) :-
         
 % leer_oracion(+PrimerC,+PrimerT,-Lista,-ProximoC)
 % Dado el primer caracter y tipo de caracter retorna la lista de 
-% palabras de la oraciÛn. La oraciÛn esta delimitada por cualquier
+% palabras de la oraci√≥n. La oraci√≥n esta delimitada por cualquier
 % caracter de fin, en especial el punto [46].
 
 leer_oracion(Caracter,fin,[],Caracter) :- !.
@@ -113,16 +113,16 @@ leer_oracion(PrimerC,PrimerT,[A|Atomos],ProximoCaracter) :- % tipo alfa
         leer_oracion(ProximoC,ProximoT,Atomos,ProximoCaracter).
 
 % leer_caracter(-Caracter,-Tipo)
-% lee un caracter de la entrada est·ndar y obtiene el tipo de caracter
+% lee un caracter de la entrada est√°ndar y obtiene el tipo de caracter
 % de la funcion tipo_caracter
 
 leer_caracter(Caracter,Tipo) :- 
-        get0(C), %% lee un caracter de la entrada est·ndar
+        get0(C), %% lee un caracter de la entrada est√°ndar
         tipo_caracter(C,Tipo,Caracter).
 
 % palabra_completa(+PrimerC,+PrimerT,-Lista,-ProximoC,-ProximoT)
 % dado el primer caracter y el primer tipo de caracter lee el resto de
-% la palabra, coloc·ndola en la lista.
+% la palabra, coloc√°ndola en la lista.
         
 palabra_completa(PrimerC,alfa,[PrimerC|Lista],ProximoC,ProximoT) :-
         !,
@@ -134,7 +134,7 @@ palabra_completa(PrimerC,num,[PrimerC|Lista],ProximoC,ProximoT) :-
         leer_caracter(Caracter,TipoC),
         palabra_numerica_completa(Caracter,TipoC,Lista,ProximoC,ProximoT).
 
-%% cuando el primer caracter no es alfanumÈrico 
+%% cuando el primer caracter no es alfanum√©rico 
 
 palabra_completa(PrimerC,PrimerT,[],PrimerC,PrimerT).
 
@@ -153,12 +153,12 @@ palabra_numerica_completa(PrimerC,especial,[PrimerC|Lista],ProximoC,ProximoT) :-
 palabra_numerica_completa(PrimerC,PrimerT,[],PrimerC,PrimerT).
 
 % tipo_caracter(+Codigo,?Type,-NuevoCodigo)
-% Dado un cÛdigo ASCII, clasifica el caracter en "fin" (de linea/archivo
-% /palabra), "alfa" (alfabÈtico y numÈricos), "especiales" al resto de 
+% Dado un c√≥digo ASCII, clasifica el caracter en "fin" (de linea/archivo
+% /palabra), "alfa" (alfab√©tico y num√©ricos), "especiales" al resto de 
 % los caracteres y "blanco"
 
-% tipo_caracter(10,fin,10) :- !. % fin de lÌnea en DOS
-% tipo_caracter(13,fin,13) :- !. % fin de lÌnea en UNIX
+% tipo_caracter(10,fin,10) :- !. % fin de l√≠nea en DOS
+% tipo_caracter(13,fin,13) :- !. % fin de l√≠nea en UNIX
 tipo_caracter(-1,fin,-1) :- !. % fin de archivo
 
 %% blanco y otros caracteres de control
@@ -167,19 +167,19 @@ tipo_caracter(Codigo,blanco,Codigo) :-
         Codigo =< 32,
         !.
 
-%% dÌgitos numÈricos    
+%% d√≠gitos num√©ricos    
 
 tipo_caracter(Codigo,num,Codigo) :- 
         48 =< Codigo, Codigo =< 57,
         !.
 
-%% letras lower-case, alfabÈticos
+%% letras lower-case, alfab√©ticos
 
 tipo_caracter(Codigo,alfa,Codigo) :- 
         97 =< Codigo, Codigo =< 122,
         !.
 
-%% letras upper-case, alfabÈticos
+%% letras upper-case, alfab√©ticos
 
 tipo_caracter(Codigo,alfa,NuevoCodigo) :- 
         65 =< Codigo, Codigo =< 90,
@@ -187,17 +187,17 @@ tipo_caracter(Codigo,alfa,NuevoCodigo) :-
         NuevoCodigo is Codigo. % NO trasladar a lower-case
         %% NuevoCodigo is Codigo + 32. % trasladar a lower-case
 
-%% vocales acentuadas y tilde en min˙sculas
-%% la lista representa respectivamente L = [·,È,Ì,Û,˙,Ò]
+%% vocales acentuadas y tilde en min√∫sculas
+%% la lista representa respectivamente L = [√°,√©,√≠,√≥,√∫,√±]
 
 tipo_caracter(Codigo,alfa,Codigo) :- 
         member(Codigo,[225,233,237,243,250,241]), 
         !.
 
-%% vocales acentuadas y tilde en may˙sculas
-%% la lista representa respectivamente L = [¡,…,Õ,”,⁄,—]
+%% vocales acentuadas y tilde en may√∫sculas
+%% la lista representa respectivamente L = [√Å,√â,√ç,√ì,√ö,√ë]
 % L = [[193,225],[201,233],[205,237],[211,243],[218,250],[209,241]]
-% L = [[¡,·],[…,È],[Õ,Ì],[”,Û],[⁄,˙],[—,Ò]]
+% L = [[√Å,√°],[√â,√©],[√ç,√≠],[√ì,√≥],[√ö,√∫],[√ë,√±]]
 
 tipo_caracter(Codigo,alfa,NuevoCodigo) :- 
         member(Codigo,[193,201,205,211,218,209]), 
@@ -205,8 +205,8 @@ tipo_caracter(Codigo,alfa,NuevoCodigo) :-
         % NuevoCodigo is Codigo. % NO trasladar a lower-case
         NuevoCodigo is Codigo + 32. % trasladar a lower-case
 
-%% caracteres especiales tratados como alfabÈticos
-%% la lista representa respectivamente L = [%,$,/,∞]
+%% caracteres especiales tratados como alfab√©ticos
+%% la lista representa respectivamente L = [%,$,/,¬∞]
 
 tipo_caracter(Codigo,alfa,Codigo) :- 
         member(Codigo,[37,36,47,176]),
