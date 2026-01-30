@@ -1,1 +1,1 @@
-if_((time(Time),it_is(Temp)),[adjust_home(Time,Temp)]).
+if_((time_day(Time),it_is(Temp)),[adjust_home(Time,Temp)]).
